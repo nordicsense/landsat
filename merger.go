@@ -4,18 +4,19 @@ import (
 	"fmt"
 	"github.com/nordicsense/gdal"
 	"github.com/nordicsense/landsat/dataset"
-	"log"
 	"math"
 	"path"
+	"sort"
 	"strconv"
 )
 
-func MergeAndCorrect(root, prefix string) error {
+func MergeAndCorrect(root, prefix string, clip bool, options ...string) error {
 	var (
 		err error
 		fo  = path.Join(root, prefix+".tiff")
 		w   dataset.MultiBandWriter
 		im  ImageMetadata
+		buf []float64
 	)
 
 	if im, err = ParseMetadata(root, prefix); err != nil {
@@ -38,8 +39,6 @@ func MergeAndCorrect(root, prefix string) error {
 		// https://www.gisagmaps.com/landsat-8-atco/
 		ip := r.ImageParams().ToBuilder().DataType(gdal.Float32).NaN(math.NaN()).Build()
 		if w == nil {
-			// best for float32, see https://kokoalberti.com/articles/geotiff-compression-optimization-guide/
-			options := []string{"compress=deflate", "zlevel=6", "predictor=3"}
 			if w, err = dataset.NewMultiBand(fo, dataset.GTiff, 7, ip, options...); err != nil {
 				r.Close()
 				break
@@ -55,46 +54,49 @@ func MergeAndCorrect(root, prefix string) error {
 			}
 		}
 
-		scale := im.Bands[band].RefScale
-		offset := im.Bands[band].RefOffset
-		div := math.Sin(im.SunElevation * math.Pi / 180.)
-		correct := func(v float64) float64 {
-			if band == 6 {
-				return v
+		box := dataset.Box{0, 0, ip.XSize(), ip.YSize()}
+		if buf, err = r.ReadBlock(0, 0, box); err == nil {
+			// apply correction
+			scale := im.Bands[band].RefScale
+			offset := im.Bands[band].RefOffset
+			div := math.Sin(im.SunElevation * math.Pi / 180.)
+			if band != 6 {
+				correct := func(v float64) float64 {
+					return (scale*v + offset) / div
+				}
+				for i, v := range buf {
+					buf[i] = correct(v)
+				}
 			}
-			return (scale*v + offset) / div
-		}
-
-		rp := r.RasterParams().ToBuilder().Scale(1.0).Offset(0.0).
-			Metadata("REFLECTION_SCALE", format(im.Bands[band].RefScale)).
-			Metadata("REFLECTION_OFFSET", format(im.Bands[band].RefOffset)).
-			Metadata("REFLECTION_MIN", format(im.Bands[band].RefMin)).
-			Metadata("REFLECTION_MAX", format(im.Bands[band].RefMax)).
-			Metadata("RADIATION_SCALE", format(im.Bands[band].RadScale)).
-			Metadata("RADIATION_OFFSET", format(im.Bands[band].RadOffset)).
-			Metadata("RADIATION_MIN", format(im.Bands[band].RadMin)).
-			Metadata("RADIATION_MAX", format(im.Bands[band].RadMax)).
-			Metadata("CORRECTION_FORMULA", fmt.Sprintf("(%fx + %f)/%f", scale, offset, div)).
-			Build()
-		bw := w.Writer(band)
-		if err = bw.SetRasterParams(rp); err == nil {
-			nx := ip.XSize()
-			ny := ip.YSize()
-			box := dataset.Box{0, 0, nx, ny}
-			if buffer, err := r.ReadBlock(0, 0, box); err == nil {
-				// apply correction
-				for i, v := range buffer {
-					buffer[i] = correct(v)
+			count, dist := distro(buf)
+			if band != 6 && clip {
+				// clip outliers outside of [0.1, 99.9] percentiles
+				for i, v := range buf {
+					if v < dist[0] || v > dist[4] {
+						buf[i] = math.NaN()
+					}
 				}
-				err = bw.WriteBlock(0, 0, box, buffer)
-
-				// FIXME: drop
-				var vals []float64
-				for i := 0; i < 4; i++ {
-					vals = append(vals, buffer[i+nx*4000+4000])
+			}
+			rpb := r.RasterParams().ToBuilder().Scale(1.0).Offset(0.0).
+				Metadata("REFLECTION_SCALE", format(im.Bands[band].RefScale)).
+				Metadata("REFLECTION_OFFSET", format(im.Bands[band].RefOffset)).
+				Metadata("REFLECTION_MIN", format(im.Bands[band].RefMin)).
+				Metadata("REFLECTION_MAX", format(im.Bands[band].RefMax)).
+				Metadata("RADIATION_SCALE", format(im.Bands[band].RadScale)).
+				Metadata("RADIATION_OFFSET", format(im.Bands[band].RadOffset)).
+				Metadata("RADIATION_MIN", format(im.Bands[band].RadMin)).
+				Metadata("RADIATION_MAX", format(im.Bands[band].RadMax)).
+				Metadata("GOOD_VALUES", strconv.Itoa(count)).
+				Metadata("QUANTILES", fmt.Sprintf("0.1%%: %f, 25%%: %f, 50%%: %f, 75%%: %f, 99.9%%: %f", dist[0], dist[1], dist[2], dist[3], dist[4]))
+			if band != 6 {
+				rpb = rpb.Metadata("CORRECTION_FORMULA", fmt.Sprintf("(%fx + %f)/%f", scale, offset, div))
+				if clip {
+					rpb = rpb.Metadata("CLIPPED", "TRUE")
 				}
-				log.Println(vals)
-
+			}
+			bw := w.Writer(band)
+			if err = bw.SetRasterParams(rpb.Build()); err == nil {
+				err = bw.WriteBlock(0, 0, box, buf)
 			}
 		}
 		r.Close()
@@ -106,15 +108,19 @@ func MergeAndCorrect(root, prefix string) error {
 	return err
 }
 
-/*
-L5:
-
-2022/01/14 22:13:57 [61 59 56 58 56 56 57 56 57 58]
-2022/01/14 22:13:58 [25 24 25 23 23 23 23 23 24 23]
-2022/01/14 22:14:03 [22 20 19 17 16 16 16 17 18 19]
-2022/01/14 22:14:29 [48 51 50 58 67 67 64 57 54 49]
-2022/01/14 22:14:39 [61 59 57 53 52 50 52 53 56 54]
-2022/01/14 22:15:00 [136 135 134 133 133 133 133 133 134 134]
-2022/01/14 22:15:18 [22 24 21 18 16 17 18 20 21 20]
-
-*/
+func distro(buf []float64) (count int, dist [5]float64) {
+	var data []float64
+	for _, v := range buf {
+		if !math.IsNaN(v) {
+			data = append(data, v)
+		}
+	}
+	count = len(data)
+	sort.Float64s(data)
+	dist[0] = data[count/1000-1]
+	dist[1] = data[count/4-1]
+	dist[2] = data[count/2-1]
+	dist[3] = data[(count/4)*3-1]
+	dist[4] = data[(count/1000)*999-1]
+	return count, dist
+}
