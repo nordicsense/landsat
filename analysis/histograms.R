@@ -24,3 +24,6 @@ lapply(split(xx, xx$band), function(x) {
     }
   }
 })
+
+
+# B1: {0.085, 0.85}

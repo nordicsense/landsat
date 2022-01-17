@@ -57,12 +57,16 @@ func HistCollect(root, prefix string, options ...string) error {
 	return err
 }
 
-func histogram(buf []float64) (min, max float64, hist [100]int) {
+func histogram(buf []float64) (min, max float64, hist []int) {
 	var data []float64
 	for _, v := range buf {
 		if !math.IsNaN(v) {
 			data = append(data, v)
 		}
+	}
+	hist = make([]int, 100)
+	if len(data) < 1 {
+		return
 	}
 	sort.Float64s(data)
 
@@ -74,5 +78,5 @@ func histogram(buf []float64) (min, max float64, hist [100]int) {
 			hist[i] += 1
 		}
 	}
-	return min, max, hist
+	return
 }
