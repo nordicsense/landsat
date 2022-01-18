@@ -1,4 +1,4 @@
-package main
+package correction
 
 import (
 	"errors"
@@ -9,28 +9,27 @@ import (
 	"strconv"
 
 	"github.com/nordicsense/gdal"
-	"github.com/nordicsense/landsat"
 	"github.com/nordicsense/landsat/dataset"
 )
 
-func MergeAndCorrect(root, prefix string, options ...string) error {
+func MergeAndApply(pathIn, prefix string, pathOut string, options ...string) error {
 	var (
 		err error
-		fo  = path.Join(root, prefix+".tiff")
+		fo  = path.Join(pathOut, prefix+".tiff")
 		w   dataset.MultiBandWriter
-		im  landsat.ImageMetadata
+		im  dataset.ImageMetadata
 		buf []float64
 	)
 
-	if im, err = landsat.ParseMetadata(root, prefix); err != nil {
+	if im, err = dataset.ParseMetadata(pathIn, prefix); err != nil {
 		return err
 	}
 
 	for band := 1; band <= 7; band++ {
-		fi := path.Join(root, prefix+"_B"+strconv.Itoa(band)+".TIF")
+		fi := path.Join(pathIn, prefix+"_B"+strconv.Itoa(band)+".TIF")
 		if band == 6 {
 			if _, err := os.Stat(fi); errors.Is(err, os.ErrNotExist) {
-				fi = path.Join(root, prefix+"_B6_VCID_1.TIF")
+				fi = path.Join(pathIn, prefix+"_B6_VCID_1.TIF")
 			}
 		}
 		var r dataset.UniBandReader

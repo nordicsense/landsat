@@ -1,4 +1,4 @@
-package landsat
+package dataset
 
 import (
 	"encoding/json"

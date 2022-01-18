@@ -1,17 +1,16 @@
-package main
+package hist
 
 import (
 	"encoding/csv"
-	"math"
 	"os"
 	"path"
-	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/nordicsense/landsat/dataset"
 )
 
-func HistCollect(root, prefix string, options ...string) error {
+func CollectForMergedImage(fName, pathOut string) error {
 	var (
 		err error
 		r   dataset.MultiBandReader
@@ -20,9 +19,10 @@ func HistCollect(root, prefix string, options ...string) error {
 		buf []float64
 	)
 
-	if r, err = dataset.OpenMultiBand(path.Join(root, prefix+".tiff")); err == nil {
+	if r, err = dataset.OpenMultiBand(fName); err == nil {
 		defer r.Close()
-		if cf, err = os.Create(path.Join(root, prefix+"_hist.csv")); err == nil {
+		fNameOut := path.Join(pathOut, strings.Replace(path.Base(fName), "."+path.Ext(fName), "", 1)+"_hist.csv")
+		if cf, err = os.Create(fNameOut); err == nil {
 			w = csv.NewWriter(cf)
 			defer func() {
 				w.Flush()
@@ -39,7 +39,7 @@ func HistCollect(root, prefix string, options ...string) error {
 		br := r.Reader(i + 1)
 		box := dataset.Box{0, 0, br.ImageParams().XSize(), br.ImageParams().YSize()}
 		if buf, err = br.ReadBlock(0, 0, box); err == nil {
-			min, max, hist := histogram(buf)
+			min, max, hist := Compute(buf)
 			delta := (max - min) / 100.
 
 			rs[0] = strconv.Itoa(i + 1)
@@ -55,28 +55,4 @@ func HistCollect(root, prefix string, options ...string) error {
 		}
 	}
 	return err
-}
-
-func histogram(buf []float64) (min, max float64, hist []int) {
-	var data []float64
-	for _, v := range buf {
-		if !math.IsNaN(v) {
-			data = append(data, v)
-		}
-	}
-	hist = make([]int, 100)
-	if len(data) < 1 {
-		return
-	}
-	sort.Float64s(data)
-
-	min = data[0]
-	max = data[len(data)-1]
-	delta := (max - min) / 100.
-	for i, j := 0, 0; i < 100; i++ {
-		for ; j < len(data) && data[j] < min+delta*float64(i+1); j++ {
-			hist[i] += 1
-		}
-	}
-	return
 }

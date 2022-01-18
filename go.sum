@@ -1,2 +1,4 @@
 github.com/nordicsense/gdal v0.0.0-20220115002029-251cd7760df6 h1:tiSwZ7/S3N+PqemOprPmhZEmidauIAOkHE8J5arpelA=
 github.com/nordicsense/gdal v0.0.0-20220115002029-251cd7760df6/go.mod h1:5C5jz12MbYJopfBeI1abFGy/OJ2A6tmNdRkVwaov1mg=
+github.com/teris-io/cli v1.0.1 h1:J6jnVHC552uqx7zT+Ux0++tIvLmJQULqxVhCid2u/Gk=
+github.com/teris-io/cli v1.0.1/go.mod h1:V9nVD5aZ873RU/tQXLSXO8FieVPQhQvuNohsdsKXsGw=

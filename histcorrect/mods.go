@@ -1,4 +1,4 @@
-package main
+package histcorrect
 
 func freq2dens(freq []int) (dens []float64) {
 	total := 0.

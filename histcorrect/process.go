@@ -1,14 +1,16 @@
-package main
+package histcorrect
 
 import (
 	"fmt"
 	"github.com/nordicsense/landsat/dataset"
+	"github.com/nordicsense/landsat/hist"
 	"log"
 	"math"
 	"path"
+	"strings"
 )
 
-func HistCorrect(root, prefix string, options ...string) error {
+func Process(fName, pathOut string, options ...string) error {
 	var (
 		err error
 		r   dataset.MultiBandReader
@@ -17,11 +19,12 @@ func HistCorrect(root, prefix string, options ...string) error {
 		buf []float64
 	)
 
-	if r, err = dataset.OpenMultiBand(path.Join(root, prefix+".tiff")); err == nil {
+	if r, err = dataset.OpenMultiBand(fName); err == nil {
 		defer r.Close()
 		ip := r.ImageParams()
 		box = dataset.Box{0, 0, ip.XSize(), ip.YSize()}
-		if w, err = dataset.NewMultiBand(path.Join(root, prefix+"_histcorr.tiff"), dataset.GTiff, r.Bands(), ip, options...); err == nil {
+		fNameOut := path.Join(pathOut, strings.Replace(path.Base(fName), "."+path.Ext(fName), "", 1)+"_histcorr.tiff")
+		if w, err = dataset.NewMultiBand(fNameOut, dataset.GTiff, r.Bands(), ip, options...); err == nil {
 			defer w.Close()
 		}
 	}
@@ -51,18 +54,18 @@ type Band struct {
 var (
 	// DO NOT use more than 2 mods, at the moment unsupported
 	bands = []Band{
-		{Index: 1, Min: 0.065, Max: 0.12, Mods: []float64{0.085}, Vols: []float64{100.}},
+		{Index: 1, Min: 0.06, Max: 0.12, Mods: []float64{0.085}, Vols: []float64{100.}},
 		{Index: 2, Min: 0.03, Max: 0.12, Mods: []float64{0.045, 0.065}, Vols: []float64{0.2, 0.8}},
 		{Index: 3, Min: 0.01, Max: 0.11, Mods: []float64{0.025, 0.05}, Vols: []float64{0.2, 0.8}},
-		{Index: 4, Min: -0.1, Max: 0.33, Mods: []float64{0.02, 0.2}, Vols: []float64{0.2, 0.8}},
+		{Index: 4, Min: 0.0, Max: 0.33, Mods: []float64{0.02, 0.2}, Vols: []float64{0.2, 0.8}},
 		{Index: 5, Min: -0.1, Max: 0.21, Mods: []float64{0.003, 0.12}, Vols: []float64{0.2, 0.8}},
 		{Index: 6, Min: 90.0, Max: 165., Mods: []float64{130}, Vols: []float64{100.}},
-		{Index: 7, Min: -0.1, Max: 0.14, Mods: []float64{0.002, 0.05}, Vols: []float64{0.2, 0.8}},
+		{Index: 7, Min: -0.01, Max: 0.14, Mods: []float64{0.002, 0.05}, Vols: []float64{0.2, 0.8}},
 	}
 )
 
 func correctBand(buf []float64, band Band) error {
-	min, max, freq := histogram(buf)
+	min, max, freq := hist.Compute(buf)
 	dens := freq2dens(freq)
 
 	var mods []float64
@@ -88,6 +91,9 @@ func correctBand(buf []float64, band Band) error {
 		factor := center / (0.5 * (mods[0] + mods[1]))
 		spread := (band.Mods[1] - band.Mods[0]) / (mods[1] - mods[0]) / factor
 		correct = func(v float64) float64 {
+			if math.IsNaN(v) || v < min || v > max {
+				return math.NaN()
+			}
 			// scale to mod, spread centering on the mod
 			res := (v*factor-center)*spread + center
 			if res < band.Min {
@@ -101,6 +107,9 @@ func correctBand(buf []float64, band Band) error {
 		// linear scaling to the second mode only
 		factor := band.Mods[1] / mods[0]
 		correct = func(v float64) float64 {
+			if math.IsNaN(v) || v < min || v > max {
+				return math.NaN()
+			}
 			res := v * factor
 			if res < band.Min {
 				res = band.Min
