@@ -1,7 +1,5 @@
 package main
 
-const minVol = 0.05
-
 func freq2dens(freq []int) (dens []float64) {
 	total := 0.
 	for _, f := range freq {
@@ -14,25 +12,90 @@ func freq2dens(freq []int) (dens []float64) {
 	return
 }
 
-// min, max - data range, dens -- density histogram - density threshold
-func computeMods(min, max float64, dens []float64, minSpread int) (mods, vols []float64) {
+func find1mod(min, max float64, dens []float64) float64 {
+	mods, vols := getAllMods(min, max, dens)
+	maxi := 0
+	maxv := 0.
+	for i, v := range vols {
+		if v > maxv {
+			maxv = v
+			maxi = i
+		}
+	}
+	return mods[maxi]
+}
+
+func find2mods(min, max float64, dens []float64, tv0, tv1 float64) ([]float64, []float64) {
+	mx, vx := getAllMods(min, max, dens)
+
+	// collect mods on the left to 60% of tv0
+	i0 := 0
+	v0 := 0.
+	maxv0 := 0.
+	for i := i0; i < len(vx) && v0 < 0.6*tv0; i++ {
+		if vx[i] > maxv0 {
+			maxv0 = vx[i]
+			i0 = i
+		}
+		v0 += vx[i]
+	}
+	// collect mods on the right to 60% of tv1
+	i1 := len(vx) - 1
+	maxv1 := 0.
+	v1 := 0.
+	for i := i1; i >= 0 && v1 < 0.6*tv1; i-- {
+		if vx[i] > maxv1 {
+			maxv1 = vx[i]
+			i1 = i
+		}
+		v1 += vx[i]
+	}
+	if i0 < i1 {
+		// two distinct points
+		mid := (mx[i0] + mx[i1]) * 0.5
+		vols := []float64{0., 0.}
+		mods := []float64{0., 0.}
+		maxv0 = 0.
+		maxv1 = 0.
+		for i := 0; i < len(mx); i++ {
+			if mx[i] <= mid {
+				vols[0] += vx[i]
+				if vx[i] > maxv0 {
+					maxv0 = vx[i]
+					mods[0] = mx[i]
+				}
+			} else {
+				vols[1] += vx[i]
+				if vx[i] > maxv1 {
+					maxv1 = vx[i]
+					mods[1] = mx[i]
+				}
+			}
+		}
+		return mods, vols
+	} else {
+		// assume single mod
+		maxi := 0
+		maxv := 0.
+		total := 0.
+		for i, v := range vx {
+			if v > maxv {
+				maxv = v
+				maxi = i
+			}
+			total += v
+		}
+		return []float64{mx[maxi]}, []float64{total}
+	}
+}
+
+func getAllMods(min, max float64, dens []float64) (mods, vols []float64) {
 	type section struct{ start, max, end int }
 	var (
 		s       *section
 		ss      []section
 		growing bool
 	)
-
-	appendSection := func(s section) {
-		if prev := len(ss) - 1; prev >= 0 && s.max-ss[prev].max < minSpread {
-			ss[prev].end = s.end
-			if dens[s.max] > dens[ss[prev].max] {
-				ss[prev].max = s.max
-			}
-		} else {
-			ss = append(ss, s)
-		}
-	}
 
 	dlast := 0.0
 	for i, d := range dens {
@@ -61,7 +124,7 @@ func computeMods(min, max float64, dens []float64, minSpread int) (mods, vols []
 		} else {
 			if d > 0 && d >= dlast {
 				// new minimum: add s as is, start new s
-				appendSection(*s)
+				ss = append(ss, *s)
 				s = &section{start: i, max: i, end: i}
 				dlast = d
 				growing = true
@@ -72,7 +135,7 @@ func computeMods(min, max float64, dens []float64, minSpread int) (mods, vols []
 			}
 		}
 		if i == len(dens)-1 && !growing && s != nil {
-			appendSection(*s)
+			ss = append(ss, *s)
 		}
 	}
 
@@ -83,10 +146,8 @@ func computeMods(min, max float64, dens []float64, minSpread int) (mods, vols []
 		for _, d := range dens[v.start:(v.end + 1)] {
 			vol += d
 		}
-		if vol >= minVol {
-			mods = append(mods, mod)
-			vols = append(vols, vol)
-		}
+		mods = append(mods, mod)
+		vols = append(vols, vol)
 	}
 	return
 }

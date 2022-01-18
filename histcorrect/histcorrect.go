@@ -6,7 +6,6 @@ import (
 	"log"
 	"math"
 	"path"
-	"strconv"
 )
 
 func HistCorrect(root, prefix string, options ...string) error {
@@ -18,14 +17,6 @@ func HistCorrect(root, prefix string, options ...string) error {
 		buf []float64
 	)
 
-	minScale := 0.04
-	if len(options) > 0 {
-		if minScale, err = strconv.ParseFloat(options[0], 64); err != nil {
-			minScale = 0.04
-		}
-		options = options[1:]
-	}
-
 	if r, err = dataset.OpenMultiBand(path.Join(root, prefix+".tiff")); err == nil {
 		defer r.Close()
 		ip := r.ImageParams()
@@ -34,14 +25,13 @@ func HistCorrect(root, prefix string, options ...string) error {
 			defer w.Close()
 		}
 	}
-
 	for i := 0; err == nil && i < r.Bands(); i++ {
 		br := r.Reader(i + 1)
 		bw := w.Writer(i + 1)
 
 		if err = bw.SetRasterParams(br.RasterParams()); err == nil {
 			if buf, err = br.ReadBlock(0, 0, box); err == nil {
-				if err = correctBand(buf, bands[i], minScale); err == nil {
+				if err = correctBand(buf, bands[i]); err == nil {
 					err = bw.WriteBlock(0, 0, box, buf)
 				}
 			}
@@ -61,25 +51,28 @@ type Band struct {
 var (
 	// DO NOT use more than 2 mods, at the moment unsupported
 	bands = []Band{
-		{Index: 1, Min: 0.065, Max: 0.12, Mods: []float64{0.085}, Vols: []float64{0.99}, MinSpread: 10},
-		{Index: 2, Min: 0.03, Max: 0.12, Mods: []float64{0.045, 0.2}, Vols: []float64{0.065, 0.8}, MinSpread: 10},
-		{Index: 3, Min: 0.01, Max: 0.11, Mods: []float64{0.025, 0.2}, Vols: []float64{0.05, 0.8}, MinSpread: 10},
-		{Index: 4, Min: -0.1, Max: 0.33, Mods: []float64{0.02, 0.12}, Vols: []float64{0.06, 0.087}, MinSpread: 10},
-		{Index: 5, Min: -0.1, Max: 0.21, Mods: []float64{0.003, 0.2}, Vols: []float64{0.11, 0.8}, MinSpread: 30},
-		{Index: 6, Min: 90.0, Max: 165., Mods: []float64{130}, Vols: []float64{0.99}, MinSpread: 30},
-		{Index: 7, Min: -0.1, Max: 0.14, Mods: []float64{0.002, 0.2}, Vols: []float64{0.05, 0.8}, MinSpread: 20},
+		{Index: 1, Min: 0.065, Max: 0.12, Mods: []float64{0.085}, Vols: []float64{100.}},
+		{Index: 2, Min: 0.03, Max: 0.12, Mods: []float64{0.045, 0.065}, Vols: []float64{0.2, 0.8}},
+		{Index: 3, Min: 0.01, Max: 0.11, Mods: []float64{0.025, 0.05}, Vols: []float64{0.2, 0.8}},
+		{Index: 4, Min: -0.1, Max: 0.33, Mods: []float64{0.02, 0.2}, Vols: []float64{0.2, 0.8}},
+		{Index: 5, Min: -0.1, Max: 0.21, Mods: []float64{0.003, 0.12}, Vols: []float64{0.2, 0.8}},
+		{Index: 6, Min: 90.0, Max: 165., Mods: []float64{130}, Vols: []float64{100.}},
+		{Index: 7, Min: -0.1, Max: 0.14, Mods: []float64{0.002, 0.05}, Vols: []float64{0.2, 0.8}},
 	}
 )
 
-func correctBand(buf []float64, band Band, minScale float64) error {
-	if len(band.Mods) > 2 {
+func correctBand(buf []float64, band Band) error {
+	min, max, freq := histogram(buf)
+	dens := freq2dens(freq)
+
+	var mods []float64
+	if len(band.Vols) == 1 {
+		mods = []float64{find1mod(min, max, dens)}
+	} else if len(band.Vols) == 2 {
+		mods, _ = find2mods(min, max, dens, band.Vols[0], band.Vols[1])
+	} else {
 		return fmt.Errorf("supported at most 2 mods, provided %d", len(band.Mods))
 	}
-
-	min, max, freq := histogram(buf)
-	// mods, scales := mods2(min, max, rawhist, minScale, band)
-	dens := freq2dens(freq)
-	mods, vols := computeMods(min, max, dens, band.MinSpread)
 
 	// if no mods found, then perform no correction
 	if len(mods) == 0 {
@@ -87,32 +80,47 @@ func correctBand(buf []float64, band Band, minScale float64) error {
 		return nil
 	}
 
-	var factor, spread, center float64
+	var correct func(v float64) float64
+
 	if len(band.Mods) == 2 && len(mods) == 2 {
 		// scale to the center between two mods, spread centering there
-		center = 0.5 * (band.Mods[0] + band.Mods[1])
-		factor = center / (0.5 * (mods[0] + mods[1]))
-		spread = (mods[1] - mods[0]) / (band.Mods[1] - band.Mods[0])
+		center := 0.5 * (band.Mods[0] + band.Mods[1])
+		factor := center / (0.5 * (mods[0] + mods[1]))
+		spread := (band.Mods[1] - band.Mods[0]) / (mods[1] - mods[0]) / factor
+		correct = func(v float64) float64 {
+			// scale to mod, spread centering on the mod
+			res := (v*factor-center)*spread + center
+			if res < band.Min {
+				res = band.Min
+			} else if res > band.Max {
+				res = math.NaN()
+			}
+			return res
+		}
 	} else if len(band.Mods) == 2 {
 		// linear scaling to the second mode only
-		center = band.Mods[1]
-		factor = center / mods[0]
-		spread = vols[0] / band.Vols[1]
+		factor := band.Mods[1] / mods[0]
+		correct = func(v float64) float64 {
+			res := v * factor
+			if res < band.Min {
+				res = band.Min
+			} else if res > band.Max {
+				res = math.NaN()
+			}
+			return res
+		}
 	} else {
 		// linear scaling to the first mode only, or just 1 mod
-		center = band.Mods[0]
-		factor = center / mods[0]
-		spread = vols[0] / band.Vols[0]
-	}
-	correct := func(v float64) float64 {
-		// scale to mod, spread centering on the mod
-		res := (v*factor-center)*spread + center
-		if res < band.Min {
-			res = band.Min
-		} else if res > band.Max {
-			res = math.NaN()
+		factor := band.Mods[0] / mods[0]
+		correct = func(v float64) float64 {
+			res := v * factor
+			if res < band.Min {
+				res = band.Min
+			} else if res > band.Max {
+				res = math.NaN()
+			}
+			return res
 		}
-		return res
 	}
 
 	for i, v := range buf {

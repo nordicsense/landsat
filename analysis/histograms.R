@@ -1,6 +1,6 @@
-l5 <- read.csv("histdata/LT05_L1TP_188013_19850709_20200918_02_T1_hist.csv")
-l7 <- read.csv("histdata/LE07_L1TP_186013_20000728_20201008_02_T1_hist.csv")
-l8 <- read.csv("histdata/LC08_L1TP_187013_20210705_20210713_02_T1_hist.csv")
+l5 <- read.csv("histdata/LT05_L1TP_188013_19850709_20200918_02_T1_histcorr_hist.csv")
+l7 <- read.csv("histdata/LE07_L1TP_186013_20000728_20201008_02_T1_histcorr_hist.csv")
+l8 <- read.csv("histdata/LC08_L1TP_187013_20210705_20210713_02_T1_histcorr_hist.csv")
 
 colnames(l5) <- c("band", "pos", "x", "f")
 colnames(l7) <- c("band", "pos", "x", "f")
