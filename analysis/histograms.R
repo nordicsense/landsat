@@ -1,34 +1,51 @@
-l5 <- read.csv("histdata/LT05_L1TP_188013_19850709_20200918_02_T1_histcorr_hist.csv")
-l7 <- read.csv("histdata/LE07_L1TP_186013_20000728_20201008_02_T1_histcorr_hist.csv")
-l8 <- read.csv("histdata/LC08_L1TP_187013_20210705_20210713_02_T1_histcorr_hist.csv")
-l82 <- read.csv("histdata/LC08_L1TP_186013_20130724_20200912_02_T1_histcorr_hist.csv")
-l83 <- read.csv("histdata/LC08_L1TP_187012_20170710_20200903_02_T1_histcorr_hist.csv")
+root <- "/Users/osklyar/Data/Landsat/analysis"
+pattern <- "T1_hist"
 
-colnames(l5) <- c("band", "pos", "x", "f")
-colnames(l7) <- c("band", "pos", "x", "f")
-colnames(l8) <- c("band", "pos", "x", "f")
-colnames(l82) <- c("band", "pos", "x", "f")
-colnames(l83) <- c("band", "pos", "x", "f")
+datalist <- lapply(list.files(root, pattern = paste(pattern, "csv", sep = ".")), function(fname) {
+  data <- read.csv(paste(root, fname, sep = "/"))
+  data <- cbind(image = substr(fname, 1, 25), data)
+  colnames(data) <- c("image", "band", "pos", "x", "f")
+  data
+})
 
-xx <- rbind(cbind(sat = "L5", l5), cbind(sat = "L7", l7), cbind(sat = "L8", l8), cbind(sat = "L82", l82), cbind(sat = "L83", l83))
+data <- do.call("rbind", datalist)
 
-lapply(split(xx, xx$band), function(x) {
-  quartz() # dev.new()
+images <- sort(unique(data$image))
+indexes <- 1:length(images)
+
+overrideXlim <- TRUE
+
+pdf(paste(root, paste(pattern, "pdf", sep = "."), sep = "/"), width = 11, height = 7)
+na <- lapply(split(data, data$band), function(x) {
   band <- unique(x$band)
   xlim <- range(x$x)
-  for (sat in c("L5", "L7", "L8", "L82", "L83")) {
-    data <- x[x$sat == sat, , drop = FALSE]
-    data$f <- data$f / sum(data$f)
-    if (sat == "L5") {
-      plot(data$x, data$f, type = "l", xlim = xlim, ylim = c(0, 0.2), col = "blue", main = paste("band", band))
-    } else if (sat == "L7") {
-      lines(data$x, data$f, col = "green")
-    } else if (sat == "L8") {
-      lines(data$x, data$f, col = "red")
-    } else if (sat == "L82") {
-      lines(data$x, data$f, col = "orange")
-    } else if (sat == "L83") {
-      lines(data$x, data$f, col = "pink")
+  if (overrideXlim) {
+    if (band == 6) {
+      xlim <- c(0, 2000)
+    } else {
+      xlim <- c(0, 0.5)
     }
   }
+  plot(xlim, c(0, 0.3), type = "n", main = paste("band", band))
+  for (i in indexes) {
+    y <- x[x$image == images[i], , drop = FALSE]
+    lines(y$x, y$f / sum(y$f), lwd = 2, col = i, lty = i)
+  }
+  legend("topright", legend = images, lwd = 2, col = indexes, lty = indexes)
+  if (i < length(images)) {
+    plot.new()
+  }
 })
+dev.off()
+
+
+images <- images[9:14]
+
+
+plot(c(0.0, 0.15), c(0, 1e7))
+for (i in 1:length(images)) {
+  image <- images[i]
+  xx <- data[data$image == image & data$band == 7,]
+  lines(xx$x, xx$f, col = i)
+}
+legend("topright", legend = images, lwd = 2, col = 1:length(images))

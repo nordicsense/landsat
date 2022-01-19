@@ -23,7 +23,7 @@ func Process(fName, pathOut string, options ...string) error {
 		defer r.Close()
 		ip := r.ImageParams()
 		box = dataset.Box{0, 0, ip.XSize(), ip.YSize()}
-		fNameOut := path.Join(pathOut, strings.Replace(path.Base(fName), "."+path.Ext(fName), "", 1)+"_histcorr.tiff")
+		fNameOut := path.Join(pathOut, strings.Replace(path.Base(fName), path.Ext(fName), "", 1)+"_histcorr.tiff")
 		if w, err = dataset.NewMultiBand(fNameOut, dataset.GTiff, r.Bands(), ip, options...); err == nil {
 			defer w.Close()
 		}

@@ -21,7 +21,7 @@ func CollectForMergedImage(fName, pathOut string) error {
 
 	if r, err = dataset.OpenMultiBand(fName); err == nil {
 		defer r.Close()
-		fNameOut := path.Join(pathOut, strings.Replace(path.Base(fName), "."+path.Ext(fName), "", 1)+"_hist.csv")
+		fNameOut := path.Join(pathOut, strings.Replace(path.Base(fName), path.Ext(fName), "", 1)+"_hist.csv")
 		if cf, err = os.Create(fNameOut); err == nil {
 			w = csv.NewWriter(cf)
 			defer func() {
