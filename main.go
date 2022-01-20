@@ -1,15 +1,15 @@
 package main
 
 import (
-	"github.com/nordicsense/landsat/correction"
-	"github.com/nordicsense/landsat/fix"
-	"github.com/nordicsense/landsat/hist"
-	"github.com/nordicsense/landsat/histcorrect"
 	"log"
 	"os"
 	"path"
 	"strings"
 
+	"github.com/nordicsense/landsat/correction"
+	"github.com/nordicsense/landsat/fix"
+	"github.com/nordicsense/landsat/hist"
+	"github.com/nordicsense/landsat/histcorrect"
 	"github.com/nordicsense/landsat/io"
 	"github.com/teris-io/cli"
 )
