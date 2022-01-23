@@ -1,5 +1,5 @@
-root <- "/Users/osklyar/Data/Landsat/analysis"
-pattern <- "T1_hist"
+root <- "/Users/osklyar/Data/Landsat/analysis/training"
+pattern <- "T1_fix_hist"
 
 datalist <- lapply(list.files(root, pattern = paste(pattern, "csv", sep = ".")), function(fname) {
   data <- read.csv(paste(root, fname, sep = "/"))
@@ -39,10 +39,7 @@ na <- lapply(split(data, data$band), function(x) {
 dev.off()
 
 
-images <- images[9:14]
-
-
-plot(c(0.0, 0.15), c(0, 1e7))
+plot(c(0., 0.15), c(0, 1e7))
 for (i in 1:length(images)) {
   image <- images[i]
   xx <- data[data$image == image & data$band == 7,]

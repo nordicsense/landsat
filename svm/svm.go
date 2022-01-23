@@ -9,9 +9,25 @@ import (
 	libSvm "github.com/nordicsense/libsvm-go"
 )
 
-const numBands = 5
+const numBands = 7
 
-func Process(data map[string]field.Records) {
+var clazzes = map[string]float64{
+	"white":    1.,
+	"infra":    2.,
+	"rock":     3.,
+	"damaged":  4.,
+	"fire":     5.,
+	"birch":    6.,
+	"pine":     7.,
+	"spruce":   8.,
+	"tundra":   9.,
+	"water":    10.,
+	"polluted": 11.,
+	"wetland":  12.,
+	"grass":    13.,
+}
+
+func Process(data []field.Record) {
 	svs, _ := toSVs(data, 2000)
 	p, err := libSvm.NewProblem(svs)
 	if err != nil {
@@ -22,12 +38,12 @@ func Process(data map[string]field.Records) {
 	par := &libSvm.Parameter{
 		SvmType:     libSvm.C_SVC,
 		KernelType:  libSvm.RBF,
-		Gamma:       0.0002, // 1. / float64(numBands),
-		Eps:         1e-7,
+		Gamma:       0.00001, //1. / float64(numBands),
+		Eps:         1e-6,
 		C:           1000,
-		NrWeight:    11,
-		WeightLabel: []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11},
-		Weight:      []float64{2.0, 2.0, 1.0, 1.0, 1.0, 1.0, 1.0, 3.0, 5.0, 3.0, 3.0},
+		NrWeight:    13,
+		WeightLabel: []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13},
+		Weight:      []float64{2.0, 0.2, 1.0, 1.0, 0.1, 2.0, 3.0, 3.0, 4.0, 3.0, 1.0, 2.0, 1.0},
 		CacheSize:   2000,
 		NumCPU:      4,
 		QuietMode:   true,
@@ -51,64 +67,54 @@ func Process(data map[string]field.Records) {
 	log.Printf("accuracy %f\n", float64(matches)/float64(matches+mismatches))
 }
 
-func toSVs(data map[string]field.Records, nSVs int) ([]libSvm.SV, map[string]float64) {
-	clazzes := map[string]float64{
-		"water_with_no_sediments":        1.,
-		"water_with_sediments":           2.,
-		"industrial_water":               3.,
-		"wet_tailing_pond":               4.,
-		"residential_area":               5.,
-		"industrial_area":                6.,
-		"old_burnt_area":                 7.,
-		"tundra_stone_tundra":            8.,
-		"tundra_undam_stone_with_lichen": 9.,
-		"natural_undam_birch_forest_with_lichen_dwarf_shrub":    10.,
-		"natural_undam_pine_forest_with_dwarf_shrub_and_lichen": 11.,
+func toSVs(rrs []field.Record, nSVs int) ([]libSvm.SV, map[string]float64) {
+	norm := normalizer(rrs)
+
+	xx := make(map[string][][]float64)
+	for _, rr := range rrs {
+		xx[rr.Clazz] = append(xx[rr.Clazz], rr.Bands)
 	}
-	norm := normalizer(data)
 
 	var res []libSvm.SV
-	for clazz, label := range clazzes {
-		for _, rr := range subsample(data[clazz], nSVs) {
-			res = append(res, libSvm.NewDenseSV(label, norm(rr)...))
+	for clazz, x := range xx {
+		for _, rr := range subsample(x, nSVs) {
+			res = append(res, libSvm.NewDenseSV(clazzes[clazz], norm(rr)...))
 		}
 	}
 	return res, clazzes
 }
 
-func subsample(rrs field.Records, nSVs int) field.Records {
+func subsample(rrs [][]float64, nSVs int) [][]float64 {
 	if nSVs >= len(rrs) {
-		res := make(field.Records, len(rrs))
+		res := make([][]float64, len(rrs))
 		for i, rr := range rrs {
 			res[i] = rr[:numBands] // FIXME dropping some bands
 		}
 		return res
 	}
 	idx := rand.Perm(len(rrs))
-	res := make(field.Records, nSVs)
+	res := make([][]float64, nSVs)
 	for i := 0; i < nSVs; i++ {
 		res[i] = rrs[idx[i]][:numBands] // FIXME dropping some bands
 	}
 	return res
 }
 
-func normalizer(data map[string]field.Records) func([]float64) []float64 {
+func normalizer(data []field.Record) func([]float64) []float64 {
 	mins := make([]float64, numBands)
 	maxs := make([]float64, numBands)
 	for i := range mins {
 		mins[i] = 1e16
 	}
-	for _, rrs := range data {
-		for _, rr := range rrs {
-			for i, v := range rr[:numBands] {
-				if math.IsNaN(v) {
-					continue
-				}
-				if v > maxs[i] {
-					maxs[i] = v
-				} else if v < mins[i] {
-					mins[i] = v
-				}
+	for _, rr := range data {
+		for i, v := range rr.Bands[:numBands] {
+			if math.IsNaN(v) {
+				continue
+			}
+			if v > maxs[i] {
+				maxs[i] = v
+			} else if v < mins[i] {
+				mins[i] = v
 			}
 		}
 	}

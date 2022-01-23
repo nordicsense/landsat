@@ -19,6 +19,7 @@ func TestProcess(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	//data, err := field.TrainingData(imgPathIn, ".*_T1_fix.tiff", coord)
 	data, err := field.TrainingData(imgPathIn, ".*_T1.tiff", coord)
 	if err != nil {
 		t.Fatal(err)

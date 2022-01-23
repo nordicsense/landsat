@@ -71,13 +71,63 @@ func Coordinates(pathIn string) (map[string]coordinateMap, error) {
 	return res, err
 }
 
-type Record []float64
-type Records []Record
+type Record struct {
+	Clazz, Subclazz string
+	Source          string
+	Coords          [2]int
+	Bands           []float64
+}
 
-func TrainingData(pathIn, pattern string, coords map[string]coordinateMap) (map[string]Records, error) {
+var Mapping = map[string][2]string{
+	"cloud":                          {"white", "cloud"},
+	"snow":                           {"white", "snow"},
+	"quarry":                         {"infra", "quarry"},
+	"spoil_heap":                     {"infra", "spoil-heap"},
+	"residential_area":               {"infra", "residential"},
+	"road":                           {"infra", "road"},
+	"asphalt":                        {"infra", "road"},
+	"industrial_area":                {"infra", "industrial"},
+	"tundra_stone_tundra":            {"rock", "stone"},
+	"tundra_undam_stone_with_lichen": {"rock", "tundra"},
+	"stone_dry_river_in_mountain":    {"rock", "dry-waterbed"},
+	"dry_tailing_pond":               {"damaged", "dry-waterbed"},
+	"human_forest_technogenic_barren_with_no_vegetation":           {"damaged", "barren"},
+	"human_technogenic_barren_almost_with_no_vegetation":           {"damaged", "barren"},
+	"human_severely_damaged":                                       {"damaged", "barren"},
+	"new_burnt_area":                                               {"fire", "new"},
+	"old_burnt_area":                                               {"fire", "old"},
+	"natural_undam_birch_forest_with_dwarf_shrub_lichen":           {"birch", "shrubs"},
+	"natural_undam_birch_forest_with_grass":                        {"birch", "grass"},
+	"natural_undam_birch_forest_with_lichen_dwarf_shrub":           {"birch", "lichen"},
+	"natural_undam_birch_spruce_forest_with_moss_lichen":           {"birch", "spruce"},
+	"human_mostly_damaged_birch_spruce":                            {"birch", "damaged"}, // damaged?
+	"natural_undam_pine_forest_with_dwarf_shrub":                   {"pine", "pine"},
+	"natural_undam_pine_forest_with_dwarf_shrub_and_lichen":        {"pine", "lichen"},
+	"natural_undam_pine_forest_with_dwarf_shrub_and_moss-lichen":   {"pine", "moss"},
+	"natural_undam_pine_spruce_forest_with_dwarf_shrub":            {"pine", "spruce"},
+	"natural_undam_spruce_forest_with_dwarf_shrub":                 {"spruce", "shrubs"},
+	"natural_undam_spruce_forest_with_dwarf_shrub_and_moss-lichen": {"spruce", "moss"},
+	"human_moderately_damaged_spruce_forest":                       {"spruce", "damaged"},
+	"tundra_undam_lichen":                                          {"tundra", "lichen"},
+	"tundra_undam_lichen_dwarf_shrub":                              {"tundra", "shrubs"},
+	"water_with_no_sediments":                                      {"water", "clean"},
+	"water_with_sediments":                                         {"polluted", "sediments"},
+	"industrial_water":                                             {"polluted", "industrial"},
+	"very_wet_tailing_pond":                                        {"polluted", "industrial"},
+	"wet_tailing_pond":                                             {"polluted", "industrial"},
+	"wetland_turf":                                                 {"wetland", "turf"},
+	"wetland_with_dwarf_shrub_and_open_water":                      {"wetland", "water"},
+	"wetland_with_dwarf_shrub_grass":                               {"wetland", "shrubs"},
+	"wetland_with_dwarf_shrub_moss_grass":                          {"wetland", "moss"},
+	"wetland_with_grass_moss_dwarf_shrub":                          {"wetland", "grass"},
+	"agricultural_field_grass_birch_willow":                        {"grass", "birch"},
+	"natural_undam_grey_willow_with_dwarf_shrub_grass":             {"grass", "willow"},
+}
+
+func TrainingData(pathIn, pattern string, coords map[string]coordinateMap) ([]Record, error) {
 	images := make(map[string]bool)
 	for _, cm := range coords {
-		for im, _ := range cm {
+		for im := range cm {
 			images[im] = true
 		}
 	}
@@ -90,7 +140,7 @@ func TrainingData(pathIn, pattern string, coords map[string]coordinateMap) (map[
 		return nil, err
 	}
 
-	res := make(map[string]Records)
+	var res []Record
 
 	for im := range images {
 		log.Printf("collecting data from %s", im)
@@ -121,15 +171,21 @@ func TrainingData(pathIn, pattern string, coords map[string]coordinateMap) (map[
 				// ugly performance workaround
 				ds := r.Reader(1).BreakGlass()
 				for _, cc := range ccs {
-					rec := make(Record, 7)
+					rec := Record{
+						Clazz:    Mapping[clazz][0],
+						Subclazz: Mapping[clazz][1],
+						Source:   im,
+						Coords:   cc,
+						Bands:    make([]float64, 7),
+					}
 					for band := 0; band < 7; band++ {
 						// FIXME: coordinates are likely to be 1-based, thus -1
 						if err = ds.RasterBand(band+1).IO(gdal.Read, cc[0]-1, cc[1]-1, 1, 1, buf, 1, 1, 0, 0); err != nil {
 							return err
 						}
-						rec[band] = buf[0]
+						rec.Bands[band] = buf[0]
 					}
-					res[clazz] = append(res[clazz], rec)
+					res = append(res, rec)
 				}
 			}
 			return nil
