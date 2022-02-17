@@ -7,9 +7,7 @@ import (
 	"strings"
 
 	"github.com/nordicsense/landsat/correction"
-	"github.com/nordicsense/landsat/fix"
 	"github.com/nordicsense/landsat/hist"
-	"github.com/nordicsense/landsat/histcorrect"
 	"github.com/nordicsense/landsat/io"
 	"github.com/teris-io/cli"
 )
@@ -33,30 +31,10 @@ func main() {
 		WithOption(cli.NewOption("verbose", "Verbose mode").WithChar('v').WithType(cli.TypeBool)).
 		WithAction(histAction)
 
-	histCorrectCmd := cli.NewCommand("histcorrect", "Correct merged and atmospherically corrected images via histogram matching").
-		WithShortcut("hc").
-		WithArg(cli.NewArg("args", "GDAL arguments, e.g. compress=deflate zlevel=6 predictor=3").AsOptional()).
-		WithOption(cli.NewOption("input", "Input directory (default: current)").WithChar('d')).
-		WithOption(cli.NewOption("output", "Output directory (default: same as input)").WithChar('o')).
-		WithOption(cli.NewOption("pattern", "Match only files with this pattern (default: .*_T1.tiff$)").WithChar('p')).
-		WithOption(cli.NewOption("verbose", "Verbose mode").WithChar('v').WithType(cli.TypeBool)).
-		WithAction(histCorrectAction)
-
-	fixCmd := cli.NewCommand("fix", "Correct merged and atmospherically corrected images via manual histogram adjustments").
-		WithShortcut("f").
-		WithArg(cli.NewArg("args", "GDAL arguments, e.g. compress=deflate zlevel=6 predictor=3").AsOptional()).
-		WithOption(cli.NewOption("input", "Input directory (default: current)").WithChar('d')).
-		WithOption(cli.NewOption("output", "Output directory (default: same as input)").WithChar('o')).
-		WithOption(cli.NewOption("pattern", "Match only files with this pattern (default: .*_T1.tiff$)").WithChar('p')).
-		WithOption(cli.NewOption("verbose", "Verbose mode").WithChar('v').WithType(cli.TypeBool)).
-		WithAction(fixAction)
-
 	app := cli.New("Tools for processing LANDSAT images").
 		WithCommand(correctCmd).
-		WithCommand(histCmd).
-		WithCommand(histCorrectCmd).
-		WithCommand(fixCmd)
-
+		WithCommand(histCmd)
+	
 	os.Exit(app.Run(os.Args, os.Stdout))
 }
 
@@ -86,40 +64,6 @@ func histAction(args []string, options map[string]string) int {
 			log.Printf("Collecting histogram for %s into %s", fName, pathOut)
 		}
 		if err := hist.CollectForMergedImage(fName, pathOut); err != nil {
-			log.Fatal(err)
-		}
-	}
-	return 0
-}
-
-func histCorrectAction(args []string, options map[string]string) int {
-	pattern, ok := options["pattern"]
-	if !ok {
-		pattern = ".*_T1.tiff$"
-	}
-	fNames, pathOut, verbose := parseOptions(options, pattern)
-	for _, fName := range fNames {
-		if verbose {
-			log.Printf("Histogram-correcting image %s into %s", fName, pathOut)
-		}
-		if err := histcorrect.Process(fName, pathOut, args...); err != nil {
-			log.Fatal(err)
-		}
-	}
-	return 0
-}
-
-func fixAction(args []string, options map[string]string) int {
-	pattern, ok := options["pattern"]
-	if !ok {
-		pattern = ".*_T1.tiff$"
-	}
-	fNames, pathOut, verbose := parseOptions(options, pattern)
-	for _, fName := range fNames {
-		if verbose {
-			log.Printf("Fix-correcting image %s into %s", fName, pathOut)
-		}
-		if err := fix.Process(fName, pathOut, args...); err != nil {
 			log.Fatal(err)
 		}
 	}
