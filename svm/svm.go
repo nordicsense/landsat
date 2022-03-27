@@ -8,46 +8,77 @@ import (
 	"sort"
 
 	"github.com/nordicsense/landsat/field"
+
 	libSvm "github.com/nordicsense/libsvm-go"
 )
 
-var clazzes = map[string]float64{
-	"I.1":   1.,
-	"I.2":   2.,
-	"I.3":   3.,
-	"I.4":   4.,
-	"I.5":   5.,
-	"I.7":   6.,
-	"I.9":   7.,
-	"II.1":  8.,
-	"II.3":  9.,
-	"II.7":  10.,
-	"II.8":  11.,
-	"III.1": 12.,
-	"III.3": 13.,
-	"IV.1":  14.,
-	"IV.3":  15.,
+var (
+	clazzes = map[string]float64{
+		"I.1":   1.,
+		"I.2":   2.,
+		"I.3":   3.,
+		"I.4":   4.,
+		"I.5":   5.,
+		"I.7":   6.,
+		"I.9":   7.,
+		"II.1":  8.,
+		"II.3":  9.,
+		"II.7":  10.,
+		"II.8":  11.,
+		"III.1": 12.,
+		"III.3": 13.,
+		"IV.1":  14.,
+		"IV.3":  15.,
+	}
+
+	clazzIndexToName map[int]string
+
+	costs = []float64{100, 500, 1000, 1500, 2000} // 750
+
+	gammas = []float64{10, 50, 100, 200, 500, 1000} // 0.2
+)
+
+const rseed = 347859634857
+
+func init() {
+	clazzIndexToName = make(map[int]string)
+	for name, index := range clazzes {
+		clazzIndexToName[int(index)] = name
+	}
 }
 
 func Process(data []field.Record) {
-	svs, _ := toSVs(data, 1000)
+	svs, _ := toSVs(data, 1000, rseed)
+	for _, cost := range costs {
+		for _, gamma := range gammas {
+			accmax := 0.
+			for i := 0; i < 5; i++ {
+				if acc, err := process(svs, cost, gamma); err == nil {
+					if acc > accmax {
+						accmax = acc
+					}
+				} else {
+					log.Fatal(err)
+				}
+			}
+			fmt.Printf("%v,%v,%v\n", cost, gamma, accmax)
+		}
+	}
+}
+
+func process(svs []libSvm.SV, cost, gamma float64) (float64, error) {
 	p, err := libSvm.NewProblem(svs)
 	if err != nil {
-		log.Fatal(err)
-	}
-
-	clss := make(map[int]string)
-	for name, index := range clazzes {
-		clss[int(index)] = name
+		return 0., err
 	}
 
 	// https://scikit-learn.org/stable/auto_examples/svm/plot_rbf_parameters.html
 	par := &libSvm.Parameter{
 		SvmType:    libSvm.C_SVC,
 		KernelType: libSvm.RBF,
-		Gamma:      0.2, //1. / float64(numBands),
-		Eps:        1e-5,
-		C:          750,
+		Gamma:      gamma,
+		Eps:        1e-4,
+		C:          cost,
 		//		NrWeight:    15,
 		//		WeightLabel: []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},
 		//		Weight:      []float64{0.1, 0.2, 0.8, 0.2, 1.2, 0.3, 0.05, 2.2, 2.0, 1.0, 1.5, 0.2, 0.05, 0.05, 0.1},
@@ -55,41 +86,27 @@ func Process(data []field.Record) {
 		NumCPU:    4,
 		QuietMode: true,
 	}
+	// log.Printf("training model with c=%f, gm=%f and %d vectors\n", cost, gamma, p.ProblemSize())
 	m := libSvm.NewModel(par)
-
-	log.Printf("training model with %d vectors\n", len(svs))
 	err = m.Train(p)
 	if err != nil {
-		log.Fatal(err)
+		return 0., err
 	}
-	var matches, mismatches int
-	log.Printf("validating %d cases\n", len(svs))
 
-	expected := make(map[string]int)
-	found := make(map[string]int)
-	pairs := make(map[string]int)
-
+	matches := 0
+	mismatches := 0
 	for _, sv := range svs {
 		lbl := m.PredictVector(sv.Nodes)
-		ec := clss[int(sv.Label)]
-		fc := clss[int(lbl)]
-		expected[ec]++
-		found[fc]++
-		pair := fmt.Sprintf("%s-%s", ec, fc)
-		pairs[pair]++
-		if ec == fc {
+		if sv.Label == lbl {
 			matches++
 		} else {
 			mismatches++
 		}
 	}
-	log.Printf("accuracy %f\n", float64(matches)/float64(matches+mismatches))
-	log.Println(expected)
-	log.Println(found)
-	log.Println(pairs)
+	return float64(matches) / float64(matches+mismatches), nil
 }
 
-func toSVs(rrs []field.Record, nSVs int) ([]libSvm.SV, map[string]float64) {
+func toSVs(rrs []field.Record, nSVs int, seed int64) ([]libSvm.SV, map[string]float64) {
 	norm := normalizer(rrs)
 
 	xx := make(map[string][][]float64)
@@ -99,7 +116,7 @@ func toSVs(rrs []field.Record, nSVs int) ([]libSvm.SV, map[string]float64) {
 
 	var res []libSvm.SV
 	for clazz, x := range xx {
-		smpl := subsample(x, nSVs)
+		smpl := subsample(seed, x, nSVs)
 		for _, rr := range smpl {
 			nrr := norm(rr)
 			res = append(res, libSvm.NewDenseSV(clazzes[clazz], nrr...))
@@ -108,11 +125,13 @@ func toSVs(rrs []field.Record, nSVs int) ([]libSvm.SV, map[string]float64) {
 	return res, clazzes
 }
 
-func subsample(rrs [][]float64, nSVs int) [][]float64 {
+func subsample(seed int64, rrs [][]float64, nSVs int) [][]float64 {
 	if nSVs >= len(rrs) {
 		return rrs
 	}
-	idx := rand.Perm(len(rrs))
+	s := rand.NewSource(seed)
+	r := rand.New(s)
+	idx := r.Perm(len(rrs))
 	res := make([][]float64, nSVs)
 	for i := 0; i < nSVs; i++ {
 		res[i] = rrs[idx[i]]
