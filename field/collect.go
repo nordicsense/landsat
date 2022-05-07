@@ -78,51 +78,34 @@ type Record struct {
 	Bands           []float64
 }
 
-var Mapping = map[string][2]string{
-	"human_technogenic_barren_almost_with_no_vegetation": {"I.1", "barren"},
-	"human_forest_technogenic_barren_with_no_vegetation": {"I.1", "barren forest"},
-	"human_severely_damaged":                             {"I.2", "severely damaged"},
-	"human_mostly_damaged_birch_spruce":                  {"I.3", "severely damaged deciduous"}, // damaged?
-	"human_moderately_damaged_spruce_forest":             {"I.4", "moderately damaged"},
-	"new_burnt_area":                                     {"I.5", "new burnt"},
-	"old_burnt_area":                                     {"I.5", "old burnt"},
-	"quarry":                                             {"I.7", "non-veg: quarry"},
-	"spoil_heap":                                         {"I.7", "non-veg: spoil heap"},
-	"industrial_area":                                    {"I.7", "non-veg: industrial"},
-	"residential_area":                                   {"I.7", "non-veg: residential"},
-	"road":                                               {"I.7", "non-veg: road"},
-	"asphalt":                                            {"I.7", "non-veg: asphalt"},
-	"water_with_sediments":                               {"I.9", "water sediments"},
-	"industrial_water":                                   {"I.9", "water industrial"},
-	"very_wet_tailing_pond":                              {"I.9", "industrial"},
-	"wet_tailing_pond":                                   {"I.9", "industrial"},
-	"natural_undam_pine_forest_with_dwarf_shrub":         {"II.1", "pine"},
-	"natural_undam_pine_forest_with_dwarf_shrub_and_lichen":        {"II.1", "pine lichen"},
-	"natural_undam_pine_forest_with_dwarf_shrub_and_moss-lichen":   {"II.1", "pine moss"},
-	"natural_undam_spruce_forest_with_dwarf_shrub":                 {"II.1", "spruce"},
-	"natural_undam_spruce_forest_with_dwarf_shrub_and_moss-lichen": {"II.1", "spruce moss"},
-	"natural_undam_birch_forest_with_dwarf_shrub_lichen":           {"II.3", "birch"},
-	"natural_undam_birch_forest_with_grass":                        {"II.3", "birch grass"},
-	"natural_undam_birch_forest_with_lichen_dwarf_shrub":           {"II.3", "birch lichen"},
-	"natural_undam_grey_willow_with_dwarf_shrub_grass":             {"II.7", "willow"},
-	"wetland_with_dwarf_shrub_grass":                               {"II.8", "wetland shrubs"},
-	"wetland_with_dwarf_shrub_moss_grass":                          {"II.8", "wetland moss"},
-	"wetland_with_grass_moss_dwarf_shrub":                          {"II.8", "wetland grass"},
-	"wetland_with_dwarf_shrub_and_open_water":                      {"II.8", "wetland water"},
-	"tundra_undam_lichen":                                          {"III.1", "tundra lichen"},
-	"tundra_undam_lichen_dwarf_shrub":                              {"III.1", "tundra shrubs"},
-	"tundra_undam_stone_with_lichen":                               {"III.3", "tundra stone"},
-	"tundra_stone_tundra":                                          {"III.3", "tundra stone"},
-	"cloud":                                                        {"IV.1", "cloud"},
-	"water_with_no_sediments":                                      {"IV.3", "clean"},
+var NewMapping = map[string]string{
 
-	"natural_undam_pine_spruce_forest_with_dwarf_shrub":  {"exclude", "spruce"},
-	"natural_undam_birch_spruce_forest_with_moss_lichen": {"exclude", "spruce"},
-	"snow":                                  {"exclude", "snow"},
-	"wetland_turf":                          {"exclude", "turf"},
-	"stone_dry_river_in_mountain":           {"exclude", "dry-waterbed"},
-	"dry_tailing_pond":                      {"exclude", "dry-waterbed"},
-	"agricultural_field_grass_birch_willow": {"exclude", "birch"},
+	"human_forest_technogenic_barren_with_no_vegetation": "I.1",
+	"human_severely_damaged":                             "I.1",
+	"human_technogenic_barren_almost_with_no_vegetation": "I.1",
+	"old_burnt_area":        "I.5",
+	"quarry":                "I.8",
+	"industrial_area":       "I.8",
+	"residential_area":      "I.8",
+	"asphalt":               "I.8",
+	"road":                  "I.8",
+	"dry_tailing_pond":      "I.9",
+	"very_wet_tailing_pond": "I.9",
+	"water_with_sediments":  "I.9",
+	"wet_tailing_pond":      "I.9",
+	"natural_undam_pine_forest_with_dwarf_shrub_and_moss-lichen":   "II.1",
+	"natural_undam_pine_forest_with_dwarf_shrub_and_lichen":        "II.1",
+	"natural_undam_spruce_forest_with_dwarf_shrub":                 "II.2",
+	"natural_undam_spruce_forest_with_dwarf_shrub_and_moss-lichen": "II.2",
+	"natural_undam_birch_forest_with_grass":                        "II.3",
+	"natural_undam_birch_forest_with_dwarf_shrub_lichen":           "II.3",
+	"natural_undam_grey_willow_with_dwarf_shrub_grass":             "II.7",
+	"wetland_with_dwarf_shrub_moss_grass":                          "II.8",
+	"wetland_with_dwarf_shrub_and_open_water":                      "II.8",
+	"tundra_undam_lichen":                                          "III.1",
+	"tundra_undam_stone_with_lichen":                               "III.1",
+	"cloud":                                                        "IV.1",
+	"water_with_no_sediments":                                      "IV.3",
 }
 
 func TrainingData(pathIn, pattern string, coords map[string]coordinateMap) ([]Record, error) {
@@ -142,6 +125,9 @@ func TrainingData(pathIn, pattern string, coords map[string]coordinateMap) ([]Re
 	}
 
 	var res []Record
+
+	stats1 := make(map[string]int)
+	stats2 := make(map[string]int)
 
 	for im := range images {
 		log.Printf("collecting data from %s", im)
@@ -163,6 +149,7 @@ func TrainingData(pathIn, pattern string, coords map[string]coordinateMap) ([]Re
 			}
 			defer r.Close()
 
+			// buf := make([]float64, 9)
 			buf := make([]float64, 1)
 			for clazz, cm := range coords {
 				ccs, ok := cm[im]
@@ -172,18 +159,30 @@ func TrainingData(pathIn, pattern string, coords map[string]coordinateMap) ([]Re
 				// ugly performance workaround
 				ds := r.Reader(1).BreakGlass()
 				for _, cc := range ccs {
-					if Mapping[clazz][0] == "exclude" {
+					if _, ok := NewMapping[clazz]; !ok {
 						continue
 					}
 					rec := Record{
-						Clazz:    Mapping[clazz][0],
-						Subclazz: Mapping[clazz][1],
-						Source:   im,
-						Coords:   cc,
-						Bands:    make([]float64, 7),
+						Clazz: NewMapping[clazz],
+						//Subclazz: Mapping[clazz][1],
+						Source: im,
+						Coords: cc,
+						Bands:  make([]float64, 7),
 					}
+					stats1[rec.Clazz]++
 					for band := 0; band < 7; band++ {
 						// FIXME: coordinates are likely to be 1-based, thus -1
+						/*
+							if err = ds.RasterBand(band+1).IO(gdal.Read, cc[0]-2, cc[1]-2, 3, 3, buf, 3, 3, 0, 0); err != nil {
+								return err
+							}
+							mean := 0.
+							for _, v := range buf {
+								mean += v
+							}
+							mean /= 9.
+							rec.Bands[band] = mean
+						*/
 						if err = ds.RasterBand(band+1).IO(gdal.Read, cc[0]-1, cc[1]-1, 1, 1, buf, 1, 1, 0, 0); err != nil {
 							return err
 						}
@@ -198,5 +197,7 @@ func TrainingData(pathIn, pattern string, coords map[string]coordinateMap) ([]Re
 			return nil, err
 		}
 	}
+	fmt.Println(stats1)
+	fmt.Println(stats2)
 	return res, nil
 }
