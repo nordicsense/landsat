@@ -125,7 +125,7 @@ func toSVs(rrs []field.Record, nSVs int, seed int64) ([]libSvm.SV, map[string]fl
 
 	xx := make(map[string][][]float64)
 	for _, rr := range rrs {
-		xx[rr.Clazz] = append(xx[rr.Clazz], rr.Bands)
+		xx[rr.Clazz] = append(xx[rr.Clazz], rr.Data)
 	}
 
 	var res []libSvm.SV
@@ -156,7 +156,7 @@ func subsample(seed int64, rrs [][]float64, nSVs int) [][]float64 {
 func normalizer(data []field.Record) func([]float64) []float64 {
 	bands := make(map[int][]float64)
 	for _, rr := range data {
-		for i, v := range rr.Bands {
+		for i, v := range rr.Data {
 			if math.IsNaN(v) {
 				continue
 			}

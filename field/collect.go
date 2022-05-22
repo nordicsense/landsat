@@ -72,10 +72,10 @@ func Coordinates(pathIn string) (map[string]coordinateMap, error) {
 }
 
 type Record struct {
-	Clazz, Subclazz string
-	Source          string
-	Coords          [2]int
-	Bands           []float64
+	Image  string
+	Clazz  string
+	Coords [2]int
+	Data   []float64
 }
 
 var NewMapping = map[string]string{
@@ -108,7 +108,86 @@ var NewMapping = map[string]string{
 	"water_with_no_sediments":                                      "IV.3",
 }
 
-func TrainingData(pathIn, pattern string, coords map[string]coordinateMap) ([]Record, error) {
+type Converter func(string, string, [2]int, []float64) (string, []float64, bool)
+
+var PathThrough Converter = func(image string, clazz string, coord [2]int, data []float64) (string, []float64, bool) {
+	return clazz, data, true
+}
+
+func TrainingData(pathIn, pattern string, coords map[string]coordinateMap, convert Converter) ([]Record, error) {
+	var (
+		err         error
+		imageFNames []string
+		imageNames  = make(map[string]bool)
+		res         []Record
+	)
+	if imageFNames, err = io.ScanTree(pathIn, pattern); err != nil {
+		return nil, err
+	}
+
+	for _, cm := range coords {
+		for im := range cm {
+			imageNames[im] = true
+		}
+	}
+
+	for im := range imageNames {
+		fName := ""
+		for _, n := range imageFNames {
+			if strings.Contains(n, im) {
+				fName = n
+				break
+			}
+		}
+		if fName == "" {
+			return nil, fmt.Errorf("could not find image for pattern %s", im)
+		}
+
+		err = func() error { // for scoping reader closure
+			r, err := dataset.OpenMultiBand(fName)
+			if err != nil {
+				return err
+			}
+			defer r.Close()
+
+			buf := make([]float64, 1)
+
+			for clazz, cm := range coords {
+				ccs, ok := cm[im]
+				if !ok {
+					continue
+				}
+				// ugly performance workaround to get access to the raw reader
+				ds := r.Reader(1).BreakGlass()
+				for _, cc := range ccs {
+					data := make([]float64, 7)
+					for band := 0; band < 7; band++ {
+						if err = ds.RasterBand(band+1).IO(gdal.Read, cc[0]-1, cc[1]-1, 1, 1, buf, 1, 1, 0, 0); err != nil {
+							return err
+						}
+						data[band] = buf[0]
+					}
+					newclazz, newdata, ok := convert(im, clazz, cc, data)
+					if ok {
+						res = append(res, Record{
+							Image:  im,
+							Clazz:  newclazz,
+							Coords: cc,
+							Data:   newdata,
+						})
+					}
+				}
+			}
+			return nil
+		}()
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func TrainingDataOld(pathIn, pattern string, coords map[string]coordinateMap) ([]Record, error) {
 	images := make(map[string]bool)
 	for _, cm := range coords {
 		for im := range cm {
@@ -165,9 +244,9 @@ func TrainingData(pathIn, pattern string, coords map[string]coordinateMap) ([]Re
 					rec := Record{
 						Clazz: NewMapping[clazz],
 						//Subclazz: Mapping[clazz][1],
-						Source: im,
+						Image:  im,
 						Coords: cc,
-						Bands:  make([]float64, 7),
+						Data:   make([]float64, 7),
 					}
 					stats1[rec.Clazz]++
 					for band := 0; band < 7; band++ {
@@ -181,12 +260,12 @@ func TrainingData(pathIn, pattern string, coords map[string]coordinateMap) ([]Re
 								mean += v
 							}
 							mean /= 9.
-							rec.Bands[band] = mean
+							rec.Data[band] = mean
 						*/
 						if err = ds.RasterBand(band+1).IO(gdal.Read, cc[0]-1, cc[1]-1, 1, 1, buf, 1, 1, 0, 0); err != nil {
 							return err
 						}
-						rec.Bands[band] = buf[0]
+						rec.Data[band] = buf[0]
 					}
 					res = append(res, rec)
 				}

@@ -24,7 +24,7 @@ func TestTrainingData(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	res, err := field.TrainingData(imgPathIn, ".*_T1_fix.tiff", coord)
+	res, err := field.TrainingDataOld(imgPathIn, ".*_T1_fix.tiff", coord)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -36,18 +36,17 @@ func TestTrainingData(t *testing.T) {
 
 	w := csv.NewWriter(fo)
 
-	r := []string{"clazz", "subclazz", "source", "x", "y", "b1", "b2", "b3", "b4", "b5", "b6", "b7"}
+	r := []string{"clazz", "source", "x", "y", "b1", "b2", "b3", "b4", "b5", "b6", "b7"}
 	if err = w.Write(r); err != nil {
 		t.Fatal(err)
 	}
 	for _, rr := range res {
 		r[0] = rr.Clazz
-		r[1] = rr.Subclazz
-		r[2] = rr.Source
-		r[3] = strconv.Itoa(rr.Coords[0])
-		r[4] = strconv.Itoa(rr.Coords[1])
-		for i, v := range rr.Bands {
-			r[i+5] = strconv.FormatFloat(v, 'f', 4, 64)
+		r[1] = rr.Image
+		r[2] = strconv.Itoa(rr.Coords[0])
+		r[3] = strconv.Itoa(rr.Coords[1])
+		for i, v := range rr.Data {
+			r[i+4] = strconv.FormatFloat(v, 'f', 4, 64)
 		}
 		if err = w.Write(r); err != nil {
 			t.Fatal(err)

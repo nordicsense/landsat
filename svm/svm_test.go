@@ -19,33 +19,33 @@ func init() {
 }
 
 func TestProcess(t *testing.T) {
-	fieldDataPathIn := "/home/osklyar/Data/Landsat/TrainingSet"
-	imgPathIn := "/home/osklyar/Data/Landsat/analysis/training"
+	fieldDataPathIn := "/Users/osklyar/Data/Landsat/TrainingSet"
+	imgPathIn := "/Users/osklyar/Data/Landsat/analysis/training"
 	coord, err := field.Coordinates(fieldDataPathIn)
 	if err != nil {
 		t.Fatal(err)
 	}
-	data, err := field.TrainingData(imgPathIn, ".*_T1.tiff", coord)
+	data, err := field.TrainingDataOld(imgPathIn, ".*_T1.tiff", coord)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	costmax, gammamax, accmax, model := svm.Process(data)
 	fmt.Printf("FINAL: %v,%v,%v\n", costmax, gammamax, accmax)
-	err = model.Dump("/home/osklyar/Data/Landsat/analysis/model3")
+	err = model.Dump("/Users/osklyar/Data/Landsat/analysis/model3")
 	if err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestClassDistribution(t *testing.T) {
-	fieldDataPathIn := "/home/osklyar/Data/Landsat/TrainingSet"
-	imgPathIn := "/home/osklyar/Data/Landsat/analysis/training"
+	fieldDataPathIn := "/Users/osklyar/Data/Landsat/TrainingSet"
+	imgPathIn := "/Users/osklyar/Data/Landsat/analysis/training"
 	coord, err := field.Coordinates(fieldDataPathIn)
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = field.TrainingData(imgPathIn, ".*_T1.tiff", coord)
+	_, err = field.TrainingDataOld(imgPathIn, ".*_T1.tiff", coord)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -53,7 +53,7 @@ func TestClassDistribution(t *testing.T) {
 }
 
 func TestPrediction(t *testing.T) {
-	model, err := libSvm.NewModelFromFile("/home/osklyar/Data/Landsat/analysis/model2")
+	model, err := libSvm.NewModelFromFile("/Users/osklyar/Data/Landsat/analysis/model2")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -61,7 +61,7 @@ func TestPrediction(t *testing.T) {
 	maxs := []float64{0.5036383271217346, 0.5171300570170084, 0.5264129704899259, 0.524611665142907, 0.41439854105313617, 143.55555555555554, 0.27334510617785984}
 	normalize := svm.PixelToSVNormalizer(mins, maxs)
 
-	r, err := dataset.OpenMultiBand("/home/osklyar/Data/Landsat/analysis/prod/LT05_L1TP_188012_19900723_20200915_02_T1.tiff")
+	r, err := dataset.OpenMultiBand("/Users/osklyar/Data/Landsat/analysis/prod/LT05_L1TP_188012_19900723_20200915_02_T1.tiff")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -72,7 +72,7 @@ func TestPrediction(t *testing.T) {
 	ip := r.ImageParams().ToBuilder().DataType(gdal.Byte).NaN(0.).Build()
 	rp := r.Reader(1).RasterParams().ToBuilder().Offset(0.).Scale(1.).Build()
 
-	w, err := dataset.NewUniBand("/home/osklyar/Data/Landsat/analysis/model3-3x3-LT05_L1TP_188012_19900723_20200915_02_T1.tiff", dataset.GTiff, ip, rp)
+	w, err := dataset.NewUniBand("/Users/osklyar/Data/Landsat/analysis/model3-3x3-LT05_L1TP_188012_19900723_20200915_02_T1.tiff", dataset.GTiff, ip, rp)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -146,7 +146,7 @@ func TestPrediction(t *testing.T) {
 }
 
 func TestPrediction1(t *testing.T) {
-	model, err := libSvm.NewModelFromFile("/home/osklyar/Data/Landsat/analysis/model2")
+	model, err := libSvm.NewModelFromFile("/Users/osklyar/Data/Landsat/analysis/model2")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -154,7 +154,7 @@ func TestPrediction1(t *testing.T) {
 	maxs := []float64{0.5036383271217346, 0.5171300570170084, 0.5264129704899259, 0.524611665142907, 0.41439854105313617, 143.55555555555554, 0.27334510617785984}
 	normalize := svm.PixelToSVNormalizer(mins, maxs)
 
-	r, err := dataset.OpenMultiBand("/home/osklyar/Data/Landsat/analysis/prod/LT05_L1TP_188012_19900723_20200915_02_T1.tiff")
+	r, err := dataset.OpenMultiBand("/Users/osklyar/Data/Landsat/analysis/prod/LT05_L1TP_188012_19900723_20200915_02_T1.tiff")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -165,7 +165,7 @@ func TestPrediction1(t *testing.T) {
 	ip := r.ImageParams().ToBuilder().DataType(gdal.Byte).NaN(0.).Build()
 	rp := r.Reader(1).RasterParams().ToBuilder().Offset(0.).Scale(1.).Build()
 
-	w, err := dataset.NewUniBand("/home/osklyar/Data/Landsat/analysis/model3-3x3-LT05_L1TP_188012_19900723_20200915_02_T1.tiff", dataset.GTiff, ip, rp)
+	w, err := dataset.NewUniBand("/Users/osklyar/Data/Landsat/analysis/model3-3x3-LT05_L1TP_188012_19900723_20200915_02_T1.tiff", dataset.GTiff, ip, rp)
 	if err != nil {
 		t.Fatal(err)
 	}
