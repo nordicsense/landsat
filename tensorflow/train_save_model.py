@@ -1,11 +1,11 @@
 import pandas as pd
 import tensorflow as tf
 
-df = pd.read_csv('/Users/osklyar/Data/Landsat/analysis/model/trainingdata.csv')
+df = pd.read_csv('~/Data/Landsat/analysis/model/trainingdata.csv')
 x = df.drop(['clazz', 'clazzid'], axis=1)
 y = df['clazzid']
 
-df = pd.read_csv('/Users/osklyar/Data/Landsat/analysis/model/trainingdata-test.csv')
+df = pd.read_csv('~/Data/Landsat/analysis/model/trainingdata-test.csv')
 x_test = df.drop(['clazz', 'clazzid'], axis=1)
 y_test = df['clazzid']
 
@@ -29,5 +29,5 @@ epochs = model.fit(x, y, epochs=10)
 model.evaluate(x_test, y_test, verbose=2)
 
 # saved_model_cli show --dir tf.model --all
-model.save("/Users/osklyar/Data/Landsat/analysis/model/tf.model")
+model.save("~/Data/Landsat/analysis/model/tf.model")
 

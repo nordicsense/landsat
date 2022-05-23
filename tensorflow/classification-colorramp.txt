@@ -1,0 +1,16 @@
+# QGIS Generated Color Map Export File
+INTERPOLATION:INTERPOLATED
+0,36,0,207,0,0
+1,223,253,253,255,Cloud
+2,77,148,255,255,Water
+3,113,78,201,255,Industrial Water
+4,149,0,48,255,Agricultural
+5,86,82,62,255,Burnt (new)
+6,139,119,77,255,Burnt (old)
+7,68,117,4,255,Impact (damaged vegetation)
+8,43,48,29,255,Impact (non-vegetated)
+9,0,0,0,255,Non-vegetated
+10,169,173,141,255,Tundra
+11,143,143,0,255,Wetland
+12,2,129,0,255,Coniferous
+13,10,209,0,255,Decidious

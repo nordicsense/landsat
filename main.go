@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/nordicsense/landsat/correction"
-	"github.com/nordicsense/landsat/hist"
 	"github.com/nordicsense/landsat/io"
 	"github.com/teris-io/cli"
 )
@@ -23,18 +22,9 @@ func main() {
 		WithOption(cli.NewOption("verbose", "Verbose mode").WithChar('v').WithType(cli.TypeBool)).
 		WithAction(correctAction)
 
-	histCmd := cli.NewCommand("hist", "Collect histograms of merged LANDSAT images").
-		WithShortcut("h").
-		WithOption(cli.NewOption("input", "Input directory (default: current)").WithChar('d')).
-		WithOption(cli.NewOption("output", "Output directory (default: same as input)").WithChar('o')).
-		WithOption(cli.NewOption("pattern", "Match only files with this pattern (default: .*_T1.tiff$)").WithChar('p')).
-		WithOption(cli.NewOption("verbose", "Verbose mode").WithChar('v').WithType(cli.TypeBool)).
-		WithAction(histAction)
-
 	app := cli.New("Tools for processing LANDSAT images").
-		WithCommand(correctCmd).
-		WithCommand(histCmd)
-	
+		WithCommand(correctCmd)
+
 	os.Exit(app.Run(os.Args, os.Stdout))
 }
 
@@ -47,23 +37,6 @@ func correctAction(args []string, options map[string]string) int {
 			log.Printf("Merging and correcting %s into %s\n", pathIn, pathOut)
 		}
 		if err := correction.MergeAndApply(pathIn, pattern, pathOut, args...); err != nil {
-			log.Fatal(err)
-		}
-	}
-	return 0
-}
-
-func histAction(args []string, options map[string]string) int {
-	pattern, ok := options["pattern"]
-	if !ok {
-		pattern = ".*_T1.tiff$"
-	}
-	fNames, pathOut, verbose := parseOptions(options, pattern)
-	for _, fName := range fNames {
-		if verbose {
-			log.Printf("Collecting histogram for %s into %s", fName, pathOut)
-		}
-		if err := hist.CollectForMergedImage(fName, pathOut); err != nil {
 			log.Fatal(err)
 		}
 	}

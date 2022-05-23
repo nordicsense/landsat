@@ -1,1 +1,0 @@
-td <- read.csv("/Users/osklyar/Data/Landsat/analysis/training/training-data-raw.csv")

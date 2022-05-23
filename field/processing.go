@@ -1,4 +1,4 @@
-package trainingdata
+package field
 
 import (
 	"encoding/csv"
@@ -8,7 +8,6 @@ import (
 	"strconv"
 
 	"github.com/nordicsense/landsat/data"
-	"github.com/nordicsense/landsat/field"
 )
 
 var (
@@ -60,6 +59,7 @@ var (
 	}
 
 	clazzId = map[string]int{
+		"cloud":               0,
 		"water":               1,
 		"impact-water":        2,
 		"agricultural":        3,
@@ -72,7 +72,6 @@ var (
 		"wetland":             10,
 		"coniferous":          11,
 		"decidious":           12,
-		"cloud":               0,
 	}
 
 	images = map[string]bool{
@@ -94,12 +93,12 @@ const (
 	clazzSize     = 40000
 )
 
-func Collect(tabPath, imgPath, csvPath string) error {
-	coord, err := field.Coordinates(tabPath)
+func Collect(tabPath, imgPath, csvPath, imgPattern string) error {
+	coord, err := CollectCoordinates(tabPath)
 	if err != nil {
 		return err
 	}
-	recs, err := field.TrainingData(imgPath, ".*.tiff", coord, convert)
+	recs, err := TrainingData(imgPath, imgPattern, coord, convert)
 	if err != nil {
 		return err
 	}
@@ -127,8 +126,8 @@ func convert(im string, clazz string, coord [2]int, xx []float64) (string, []flo
 	return newclazz, data.Transform(xx, false), true
 }
 
-func subsample(recs []field.Record, trainFraction float64) (train []field.Record, test []field.Record) {
-	byClazz := make(map[string][]field.Record)
+func subsample(recs []Record, trainFraction float64) (train []Record, test []Record) {
+	byClazz := make(map[string][]Record)
 	for _, rec := range recs {
 		byClazz[rec.Clazz] = append(byClazz[rec.Clazz], rec)
 	}
@@ -150,7 +149,7 @@ func subsample(recs []field.Record, trainFraction float64) (train []field.Record
 		if nTest-nTrain > 500 {
 			nTest = nTrain + 500
 		}
-		
+
 		for i := 0; i < nTrain; i++ {
 			train = append(train, xx[idx[i]])
 		}
@@ -161,7 +160,7 @@ func subsample(recs []field.Record, trainFraction float64) (train []field.Record
 	return train, test
 }
 
-func dumpCsv(name string, xx []field.Record) error {
+func dumpCsv(name string, xx []Record) error {
 	fo, err := os.Create(name)
 	if err != nil {
 		return err

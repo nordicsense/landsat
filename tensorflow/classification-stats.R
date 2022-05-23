@@ -3,14 +3,14 @@ nms <- c("cloud", "water", "impact-water", "agricultural", "burnt-new", "burnt-o
     "impact-nonvegetated", "nonvegetated", "tundra", "wetland", "coniferous", "decidious")
 
 
-data <- read.csv("/Users/osklyar/Data/Landsat/analysis/model/trainingdata.csv")
+data <- read.csv("~/Data/Landsat/analysis/model/trainingdata.csv")
 data <- split(data, data$clazz)
 data <- data[nms]
 
 
 sapply(data, nrow)
 
-pdf(file="/Users/osklyar/Data/Landsat/analysis/model/trainingdata.pdf", height=8.4, width=11.6)
+pdf(file="~/Data/Landsat/analysis/model/trainingdata.pdf", height=8.4, width=11.6)
 datasets <- c("band1", "band2", "band3", "band4", "band5", "band7", "ndvi", "nbr", "ndwi") # "nbr2"
 par(mar=c(4,10,2,2), mfrow=c(3,3))
 for (dsname in datasets) {

@@ -4,13 +4,16 @@ import (
 	"encoding/csv"
 	"github.com/nordicsense/landsat/field"
 	"os"
+	"path"
 	"strconv"
 	"testing"
 )
 
 func TestCoordinates(t *testing.T) {
-	pathIn := "/Users/osklyar/Data/Landsat/TrainingSet"
-	res, err := field.Coordinates(pathIn)
+	hd, _ := os.UserHomeDir()
+
+	pathIn := path.Join(hd, "Data/Landsat/TrainingSet")
+	res, err := field.CollectCoordinates(pathIn)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -18,18 +21,19 @@ func TestCoordinates(t *testing.T) {
 }
 
 func TestTrainingData(t *testing.T) {
-	fieldDataPathIn := "/Users/osklyar/Data/Landsat/TrainingSet"
-	imgPathIn := "/Users/osklyar/Data/Landsat/analysis/training"
-	coord, err := field.Coordinates(fieldDataPathIn)
+	hd, _ := os.UserHomeDir()
+	fieldDataPathIn := path.Join(hd, "Data/Landsat/TrainingSet")
+	imgPathIn := path.Join(hd, "Data/Landsat/analysis/training")
+	coord, err := field.CollectCoordinates(fieldDataPathIn)
 	if err != nil {
 		t.Fatal(err)
 	}
-	res, err := field.TrainingDataOld(imgPathIn, ".*_T1_fix.tiff", coord)
+	res, err := field.TrainingData(imgPathIn, ".*_T1_fix.tiff", coord, field.PathThrough)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	fo, err := os.Create("/Users/osklyar/Data/Landsat/analysis/training/training-data-raw-fix.csv")
+	fo, err := os.Create(path.Join(hd, "Data/Landsat/analysis/training/training-data-raw-fix.csv"))
 	if err != nil {
 		t.Fatal(err)
 	}
