@@ -1,19 +1,20 @@
-package field_test
+package collector_test
 
 import (
 	"encoding/csv"
-	"github.com/nordicsense/landsat/field"
 	"os"
 	"path"
 	"strconv"
 	"testing"
+
+	"github.com/nordicsense/landsat/field/collector"
 )
 
 func TestCoordinates(t *testing.T) {
 	hd, _ := os.UserHomeDir()
 
 	pathIn := path.Join(hd, "Data/Landsat/TrainingSet")
-	res, err := field.CollectCoordinates(pathIn)
+	res, err := collector.CollectCoordinates(pathIn)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -24,11 +25,11 @@ func TestTrainingData(t *testing.T) {
 	hd, _ := os.UserHomeDir()
 	fieldDataPathIn := path.Join(hd, "Data/Landsat/TrainingSet")
 	imgPathIn := path.Join(hd, "Data/Landsat/analysis/training")
-	coord, err := field.CollectCoordinates(fieldDataPathIn)
+	coord, err := collector.CollectCoordinates(fieldDataPathIn)
 	if err != nil {
 		t.Fatal(err)
 	}
-	res, err := field.TrainingData(imgPathIn, ".*_T1_fix.tiff", coord, field.PathThrough)
+	res, err := collector.TrainingData(imgPathIn, ".*_T1.tiff", coord, collector.PathThrough)
 	if err != nil {
 		t.Fatal(err)
 	}

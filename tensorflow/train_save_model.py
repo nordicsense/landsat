@@ -4,6 +4,8 @@ import tensorflow as tf
 import tensorflow.keras.layers as layers
 import tensorflow.keras.losses as losses
 
+nClasses = 18
+
 root = os.environ.get("RESULTS_DIR")
 
 df = pd.read_csv(root + '/trainingdata/trainingdata.csv')
@@ -19,9 +21,8 @@ tf.random.set_seed(42)
 model = tf.keras.Sequential([
     layers.Dense(512, activation=tf.nn.relu, name="outer"),
     layers.Dense(256, activation=tf.nn.relu, name="inner"),
-    layers.Dense(13, activation=tf.nn.softmax, name="clazzifier"), # 13 classes
+    layers.Dense(nClasses, activation=tf.nn.softmax, name="clazzifier"),
 ], name="sequential")
-
 
 model.compile(
     optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
@@ -29,9 +30,9 @@ model.compile(
     metrics=['accuracy']
 )
 
-epochs = model.fit(x, y, epochs=10)
-
+model.fit(x, y, epochs=10)
 model.evaluate(x_test, y_test, verbose=2)
+
 
 # saved_model_cli show --dir tf.model --all
 model.save(root + '/tf.model')

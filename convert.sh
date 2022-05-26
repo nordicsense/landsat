@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-export VERSION=v2-7vars-nob5
+export VERSION=18classes-7vars
 
 export RESULTS_DIR=/Volumes/Caffeine/Data/Landsat/results/${VERSION}
 export ROOT_DIR=/Volumes/Caffeine/Data/Landsat

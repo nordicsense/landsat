@@ -7,8 +7,6 @@ import (
 )
 
 const (
-	NClasses = 13
-
 	defaultModelTag = "serve"
 	modelInputOp    = "serving_default_outer_input"
 	modelOutputOp   = "StatefulPartitionedCall"

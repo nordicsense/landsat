@@ -1,8 +1,10 @@
-package field
+package collector
 
 import (
 	"bufio"
+	"encoding/csv"
 	"fmt"
+	"math/rand"
 	"os"
 	"path"
 	"regexp"
@@ -10,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/nordicsense/gdal"
+	"github.com/nordicsense/landsat/data"
 	"github.com/nordicsense/landsat/dataset"
 	"github.com/nordicsense/landsat/io"
 )
@@ -77,9 +80,9 @@ type Record struct {
 	Data   []float64
 }
 
-type Converter func(string, string, [2]int, []float64) (string, []float64, bool)
+type Converter func(string, string, []float64) (string, []float64, bool)
 
-var PathThrough Converter = func(image string, clazz string, coord [2]int, data []float64) (string, []float64, bool) {
+var PathThrough Converter = func(image string, clazz string, data []float64) (string, []float64, bool) {
 	return clazz, data, true
 }
 
@@ -129,14 +132,14 @@ func TrainingData(pathIn, pattern string, coords map[string]coordinateMap, conve
 				// ugly performance workaround to get access to the raw reader
 				ds := r.Reader(1).BreakGlass()
 				for _, cc := range ccs {
-					data := make([]float64, 7)
+					xx := make([]float64, 7)
 					for band := 0; band < 7; band++ {
 						if err = ds.RasterBand(band+1).IO(gdal.Read, cc[0]-1, cc[1]-1, 1, 1, buf, 1, 1, 0, 0); err != nil {
 							return err
 						}
-						data[band] = buf[0]
+						xx[band] = buf[0]
 					}
-					newclazz, newdata, ok := convert(im, clazz, cc, data)
+					newclazz, newdata, ok := convert(im, clazz, xx)
 					if ok {
 						res = append(res, Record{
 							Image:  im,
@@ -154,4 +157,64 @@ func TrainingData(pathIn, pattern string, coords map[string]coordinateMap, conve
 		}
 	}
 	return res, nil
+}
+
+func Subsample(recs []Record, clazzId map[string]int, clazzSize, testSize int, r *rand.Rand, trainFraction float64) (train []Record, test []Record) {
+	byClazz := make(map[string][]Record)
+	for _, rec := range recs {
+		byClazz[rec.Clazz] = append(byClazz[rec.Clazz], rec)
+	}
+
+	for clazz := range clazzId {
+		xx := byClazz[clazz]
+		nn := len(xx)
+		idx := r.Perm(nn)
+
+		scale := float64(clazzSize) / float64(nn)
+		if scale >= 1.0 {
+			scale = 1.0
+		}
+
+		nTrain := int(float64(nn) * trainFraction * scale)
+		nTest := int(float64(nn)*scale) - 1
+
+		// cap test at testSize to roughly equalize classes
+		if nTest-nTrain > testSize {
+			nTest = nTrain + testSize
+		}
+
+		for i := 0; i < nTrain; i++ {
+			train = append(train, xx[idx[i]])
+		}
+		for i := nTrain; i < nTest; i++ {
+			test = append(test, xx[idx[i]])
+		}
+	}
+	return train, test
+}
+
+func DumpCSV(name string, recs []Record, clazzId map[string]int) error {
+	fo, err := os.Create(name)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = fo.Close() }()
+	w := csv.NewWriter(fo)
+	defer w.Flush()
+
+	l := append([]string{"clazz", "clazzid"}, data.Clazzes...)
+	if err = w.Write(l); err != nil {
+		return err
+	}
+	for _, r := range recs {
+		l[0] = r.Clazz
+		l[1] = strconv.Itoa(clazzId[r.Clazz])
+		for i, v := range r.Data {
+			l[i+2] = strconv.FormatFloat(v, 'f', 6, 64)
+		}
+		if err = w.Write(l); err != nil {
+			return err
+		}
+	}
+	return nil
 }
