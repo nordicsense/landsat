@@ -10,7 +10,7 @@ import (
 	"github.com/vardius/progress-go"
 )
 
-func Predict(modelDir, inputTiff, outputTiff string, minx, maxx, miny, maxy int, isL8 bool) error {
+func Predict(modelDir, inputTiff, outputTiff string, minx, maxx, miny, maxy int, landsatId int, verbose bool) error {
 	model, err := LoadModel(modelDir)
 	if err != nil {
 		return err
@@ -54,11 +54,15 @@ func Predict(modelDir, inputTiff, outputTiff string, minx, maxx, miny, maxy int,
 	}
 
 	bar := progress.New(int64(miny), int64(maxy))
-	bar.Start()
+	if verbose {
+		bar.Start()
+	}
 
 	var rrs [7][]float64
 	for y := miny; y < maxy && y < ny; y++ {
-		bar.Advance(1)
+		if verbose {
+			bar.Advance(1)
+		}
 		for band := 0; band < 7; band++ {
 			rrs[band] = make([]float64, dx)
 			if err = ds.RasterBand(band+1).IO(gdal.Read, minx, y, dx, 1, rrs[band], dx, 1, 0, 0); err != nil {
@@ -77,9 +81,9 @@ func Predict(modelDir, inputTiff, outputTiff string, minx, maxx, miny, maxy int,
 				}
 				xx[band] = v
 			}
-			xxt := data.Transform(xx, isL8)
-			if len(xxt) != NVariables {
-				return fmt.Errorf("expected %d input variables, found %d", NVariables, len(xxt))
+			xxt := data.Transform(xx, landsatId)
+			if len(xxt) != data.NVars {
+				return fmt.Errorf("expected %d input variables, found %d", data.NVars, len(xxt))
 			}
 			var xxo Observation
 			for i, v := range xxt {
@@ -106,6 +110,8 @@ func Predict(modelDir, inputTiff, outputTiff string, minx, maxx, miny, maxy int,
 			return err
 		}
 	}
-	bar.Stop()
+	if verbose {
+		bar.Stop()
+	}
 	return nil
 }

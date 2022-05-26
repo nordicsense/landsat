@@ -1,11 +1,11 @@
 import pandas as pd
 import tensorflow as tf
 
-df = pd.read_csv('~/Data/Landsat/analysis/model/trainingdata.csv')
+df = pd.read_csv('/Volumes/Caffeine/Data/Landsat/results/current/trainingdata/trainingdata.csv')
 x = df.drop(['clazz', 'clazzid'], axis=1)
 y = df['clazzid']
 
-df = pd.read_csv('~/Data/Landsat/analysis/model/trainingdata-test.csv')
+df = pd.read_csv('/Volumes/Caffeine/Data/Landsat/results/current/trainingdata/trainingdata-test.csv')
 x_test = df.drop(['clazz', 'clazzid'], axis=1)
 y_test = df['clazzid']
 
@@ -13,7 +13,7 @@ tf.random.set_seed(42)
 
 model = tf.keras.Sequential([
     tf.keras.layers.Dense(512, activation='relu', name="outer"),
-    tf.keras.layers.Dense(512, activation='relu', name="inner"),
+    tf.keras.layers.Dense(256, activation='relu', name="inner"),
     tf.keras.layers.Dense(13, activation='softmax', name="clazzifier"), # 13 classes
 ], name="sequential")
 
@@ -29,5 +29,5 @@ epochs = model.fit(x, y, epochs=10)
 model.evaluate(x_test, y_test, verbose=2)
 
 # saved_model_cli show --dir tf.model --all
-model.save("~/Data/Landsat/analysis/model/tf.model")
+model.save("/Volumes/Caffeine/Data/Landsat/results/current/tf.model")
 

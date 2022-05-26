@@ -123,7 +123,14 @@ func convert(im string, clazz string, coord [2]int, xx []float64) (string, []flo
 			return "", nil, false
 		}
 	}
-	return newclazz, data.Transform(xx, false), true
+	landsatId := 7
+	switch im[0:5] {
+	case "LT05":
+		landsatId = 5
+	case "LC08":
+		landsatId = 8
+	}
+	return newclazz, data.Transform(xx, landsatId), true
 }
 
 func subsample(recs []Record, trainFraction float64) (train []Record, test []Record) {
@@ -169,7 +176,7 @@ func dumpCsv(name string, xx []Record) error {
 	w := csv.NewWriter(fo)
 	defer w.Flush()
 
-	l := []string{"clazz", "clazzid", "band1", "band2", "band3", "band4", "band5", "band7", "ndvi", "nbr", "nbr2", "ndwi"}
+	l := append([]string{"clazz", "clazzid"}, data.Clazzes...)
 	if err = w.Write(l); err != nil {
 		return err
 	}

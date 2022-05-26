@@ -2,6 +2,7 @@ package tensorflow_test
 
 import (
 	"encoding/csv"
+	"github.com/nordicsense/landsat/data"
 	"github.com/nordicsense/landsat/tensorflow"
 	"io"
 	"log"
@@ -49,7 +50,7 @@ func TestModelPredict(t *testing.T) {
 
 func readTestingSet(dataFile string) ([]tensorflow.Observation, []int, error) {
 	var expected []int
-	var data []tensorflow.Observation
+	var xx []tensorflow.Observation
 
 	tfile, err := os.Open(dataFile)
 	if err != nil {
@@ -73,7 +74,7 @@ func readTestingSet(dataFile string) ([]tensorflow.Observation, []int, error) {
 		}
 		var (
 			o  int
-			vv [tensorflow.NVariables]float64
+			vv [data.NVars]float64
 		)
 		for i, v := range rec {
 			if i == 0 {
@@ -93,7 +94,7 @@ func readTestingSet(dataFile string) ([]tensorflow.Observation, []int, error) {
 			}
 		}
 		expected = append(expected, o)
-		data = append(data, vv)
+		xx = append(xx, vv)
 	}
-	return data, expected, nil
+	return xx, expected, nil
 }

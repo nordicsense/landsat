@@ -12,7 +12,7 @@ import (
 	"github.com/nordicsense/landsat/dataset"
 )
 
-func MergeAndApply(pathIn, prefix string, pathOut string, options ...string) error {
+func MergeAndApply(pathIn, prefix string, pathOut string, skip bool, options ...string) error {
 	var (
 		err error
 		fo  = path.Join(pathOut, prefix+".tiff")
@@ -20,6 +20,10 @@ func MergeAndApply(pathIn, prefix string, pathOut string, options ...string) err
 		im  dataset.ImageMetadata
 		buf []float64
 	)
+
+	if _, err := os.Stat(fo); skip && err == nil {
+		return nil
+	}
 
 	if im, err = dataset.ParseMetadata(pathIn, prefix); err != nil {
 		return err

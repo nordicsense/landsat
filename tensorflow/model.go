@@ -2,20 +2,19 @@ package tensorflow
 
 import (
 	"fmt"
-
+	"github.com/nordicsense/landsat/data"
 	tf "github.com/tensorflow/tensorflow/tensorflow/go"
 )
 
 const (
-	NVariables = 10
-	NClasses   = 13
+	NClasses = 13
 
 	defaultModelTag = "serve"
 	modelInputOp    = "serving_default_outer_input"
 	modelOutputOp   = "StatefulPartitionedCall"
 )
 
-type Observation [NVariables]float64
+type Observation [data.NVars]float64
 
 func LoadModel(name string) (*Model, error) {
 	model, err := tf.LoadSavedModel(name, []string{defaultModelTag}, nil)
@@ -33,16 +32,17 @@ func (m *Model) Predict(obs []Observation) ([]int, error) {
 	if len(obs) < 1 {
 		return nil, nil
 	}
-	tensor, err := tf.NewTensor(obs)
-	if err != nil {
+	var (
+		err    error
+		tensor *tf.Tensor
+		output []*tf.Tensor
+	)
+	if tensor, err = tf.NewTensor(obs); err != nil {
 		return nil, err
 	}
-
 	feeds := map[tf.Output]*tf.Tensor{m.m.Graph.Operation(modelInputOp).Output(0): tensor}
 	fetches := []tf.Output{m.m.Graph.Operation(modelOutputOp).Output(0)}
-
-	output, err := m.m.Session.Run(feeds, fetches, nil)
-	if err != nil {
+	if output, err = m.m.Session.Run(feeds, fetches, nil); err != nil {
 		return nil, err
 	}
 	if len(output) == 0 {
@@ -75,8 +75,7 @@ func indexOfMaxValue(x []float32) int {
 	return ind
 }
 
-func (m *Model) Close() error {
-	err := m.m.Session.Close()
+func (m *Model) Close() {
+	m.m.Session.Close()
 	m.m = nil
-	return err
 }
