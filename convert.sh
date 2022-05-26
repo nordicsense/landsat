@@ -1,16 +1,16 @@
 #!/usr/bin/env sh
 
+export VERSION=v2-7vars-nob5
+
+export RESULTS_DIR=/Volumes/Caffeine/Data/Landsat/results/${VERSION}
 export ROOT_DIR=/Volumes/Caffeine/Data/Landsat
+
 mkdir -p ${ROOT_DIR}/corrected/training
 mkdir -p ${ROOT_DIR}/corrected/prod
-
 landsat correct -v -s -d ${ROOT_DIR}/sources/training -o ${ROOT_DIR}/corrected/training # compress=deflate zlevel=6 predictor=3
-
 landsat correct -v -s -d ${ROOT_DIR}/sources/prod -o ${ROOT_DIR}/corrected/prod # compress=deflate zlevel=6 predictor=3
 
-export RESULTS_DIR=${ROOT_DIR}/results/current
 mkdir -p ${RESULTS_DIR}/trainingdata
-
 landsat field ${ROOT_DIR}/sources/training-coordinates -d ${ROOT_DIR}/corrected/training -o ${RESULTS_DIR}/trainingdata/trainingdata
 
 # Train the model here

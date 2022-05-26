@@ -1,26 +1,31 @@
+import os
 import pandas as pd
 import tensorflow as tf
+import tensorflow.keras.layers as layers
+import tensorflow.keras.losses as losses
 
-df = pd.read_csv('/Volumes/Caffeine/Data/Landsat/results/current/trainingdata/trainingdata.csv')
+root = os.environ.get("RESULTS_DIR")
+
+df = pd.read_csv(root + '/trainingdata/trainingdata.csv')
 x = df.drop(['clazz', 'clazzid'], axis=1)
 y = df['clazzid']
 
-df = pd.read_csv('/Volumes/Caffeine/Data/Landsat/results/current/trainingdata/trainingdata-test.csv')
+df = pd.read_csv(root + '/trainingdata/trainingdata-test.csv')
 x_test = df.drop(['clazz', 'clazzid'], axis=1)
 y_test = df['clazzid']
 
 tf.random.set_seed(42)
 
 model = tf.keras.Sequential([
-    tf.keras.layers.Dense(512, activation='relu', name="outer"),
-    tf.keras.layers.Dense(256, activation='relu', name="inner"),
-    tf.keras.layers.Dense(13, activation='softmax', name="clazzifier"), # 13 classes
+    layers.Dense(512, activation=tf.nn.relu, name="outer"),
+    layers.Dense(256, activation=tf.nn.relu, name="inner"),
+    layers.Dense(13, activation=tf.nn.softmax, name="clazzifier"), # 13 classes
 ], name="sequential")
 
+
 model.compile(
-    optimizer=tf.keras.optimizers.Adam(learning_rate=0.01),
-    # optimizer=tf.keras.optimizers.SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True),
-    loss=tf.keras.losses.SparseCategoricalCrossentropy(),
+    optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
+    loss=losses.SparseCategoricalCrossentropy(reduction=losses.Reduction.SUM),
     metrics=['accuracy']
 )
 
@@ -29,5 +34,5 @@ epochs = model.fit(x, y, epochs=10)
 model.evaluate(x_test, y_test, verbose=2)
 
 # saved_model_cli show --dir tf.model --all
-model.save("/Volumes/Caffeine/Data/Landsat/results/current/tf.model")
+model.save(root + '/tf.model')
 
