@@ -3,6 +3,7 @@ package tensorflow
 import (
 	"fmt"
 	"math"
+	"os"
 
 	"github.com/nordicsense/gdal"
 	"github.com/nordicsense/landsat/data"
@@ -10,7 +11,10 @@ import (
 	"github.com/vardius/progress-go"
 )
 
-func Predict(modelDir, inputTiff, outputTiff string, minx, maxx, miny, maxy int, landsatId int, verbose bool) error {
+func Predict(modelDir, inputTiff, outputTiff string, minx, maxx, miny, maxy int, landsatId int, skip, verbose bool) error {
+	if _, err := os.Stat(outputTiff); skip && err == nil {
+		return nil
+	}
 	model, err := LoadModel(modelDir)
 	if err != nil {
 		return err

@@ -3,6 +3,7 @@ package correction
 import (
 	"errors"
 	"fmt"
+	"github.com/vardius/progress-go"
 	"math"
 	"os"
 	"path"
@@ -12,7 +13,7 @@ import (
 	"github.com/nordicsense/landsat/dataset"
 )
 
-func MergeAndApply(pathIn, prefix string, pathOut string, skip bool, options ...string) error {
+func MergeAndApply(pathIn, prefix string, pathOut string, skip, verbose bool, options ...string) error {
 	var (
 		err error
 		fo  = path.Join(pathOut, prefix+".tiff")
@@ -27,6 +28,11 @@ func MergeAndApply(pathIn, prefix string, pathOut string, skip bool, options ...
 
 	if im, err = dataset.ParseMetadata(pathIn, prefix); err != nil {
 		return err
+	}
+
+	bar := progress.New(0, 7)
+	if verbose {
+		bar.Start()
 	}
 
 	for band := 1; band <= 7; band++ {
@@ -101,7 +107,11 @@ func MergeAndApply(pathIn, prefix string, pathOut string, skip bool, options ...
 		if err != nil {
 			break
 		}
+		if verbose {
+			bar.Advance(1)
+		}
 	}
 	w.Close()
+	bar.Stop()
 	return err
 }

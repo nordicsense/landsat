@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/nordicsense/landsat/field/collector"
+	"github.com/nordicsense/landsat/training/collector"
 )
 
 func TestCoordinates(t *testing.T) {

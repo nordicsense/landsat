@@ -5,7 +5,7 @@ import (
 	"math/rand"
 
 	"github.com/nordicsense/landsat/data"
-	"github.com/nordicsense/landsat/field/collector"
+	"github.com/nordicsense/landsat/training/collector"
 )
 
 var (

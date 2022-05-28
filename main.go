@@ -1,8 +1,6 @@
 package main
 
 import (
-	"github.com/nordicsense/landsat/field"
-	"github.com/nordicsense/landsat/tensorflow"
 	"log"
 	"os"
 	"path"
@@ -10,7 +8,10 @@ import (
 	"strings"
 
 	"github.com/nordicsense/landsat/correction"
+	"github.com/nordicsense/landsat/filter"
 	"github.com/nordicsense/landsat/io"
+	"github.com/nordicsense/landsat/tensorflow"
+	"github.com/nordicsense/landsat/training"
 	"github.com/teris-io/cli"
 )
 
@@ -26,7 +27,8 @@ func main() {
 		WithOption(cli.NewOption("skip", "Skip existing").WithChar('s').WithType(cli.TypeBool)).
 		WithAction(correctAction)
 
-	fieldCmd := cli.NewCommand("field", "Collect training data from field data").
+	trainingCmd := cli.NewCommand("training", "Collect training data from field data").
+		WithShortcut("t").
 		WithArg(cli.NewArg("coorddir", "Directory with coordinate files")).
 		WithOption(cli.NewOption("input", "Input directory for images (default: current)").WithChar('d')).
 		WithOption(cli.NewOption("output", "Output directory for training data (default: current)").WithChar('o')).
@@ -39,13 +41,24 @@ func main() {
 		WithOption(cli.NewOption("model", "Tensorflow model directory (default: ./tf.model)").WithChar('m')).
 		WithOption(cli.NewOption("output", "Output directory (default: same as input)").WithChar('o')).
 		WithOption(cli.NewOption("id", "Landsat series Id (5, 7 (default), or 8)").WithType(cli.TypeInt)).
+		WithOption(cli.NewOption("skip", "Skip existing").WithChar('s').WithType(cli.TypeBool)).
 		WithOption(cli.NewOption("verbose", "Verbose mode").WithChar('v').WithType(cli.TypeBool)).
 		WithAction(predictAction)
 
-	app := cli.New("Tools for processing LANDSAT images").
+	filterCmd := cli.NewCommand("filter", "Filter output with a smoothing filter").
+		WithShortcut("f").
+		WithArg(cli.NewArg("algo", "Filtering algorithm: 3x3, 5x5")).
+		WithArg(cli.NewArg("data", "Classification uni-band")).
+		WithOption(cli.NewOption("output", "Output directory (default: same as input)").WithChar('o')).
+		WithOption(cli.NewOption("skip", "Skip existing").WithChar('s').WithType(cli.TypeBool)).
+		WithOption(cli.NewOption("verbose", "Verbose mode").WithChar('v').WithType(cli.TypeBool)).
+		WithAction(filterAction)
+
+	app := cli.New("Normalize and classify Landsat images for the Northern hemisphere").
 		WithCommand(correctCmd).
-		WithCommand(fieldCmd).
-		WithCommand(predictCmd)
+		WithCommand(trainingCmd).
+		WithCommand(predictCmd).
+		WithCommand(filterCmd)
 
 	os.Exit(app.Run(os.Args, os.Stdout))
 }
@@ -73,7 +86,7 @@ func correctAction(args []string, options map[string]string) int {
 		if verbose {
 			log.Printf("Merging and correcting %s into %s\n", pathIn, pathOut)
 		}
-		if err := correction.MergeAndApply(pathIn, pattern, pathOut, skip, args...); err != nil {
+		if err := correction.MergeAndApply(pathIn, pattern, pathOut, skip, verbose, args...); err != nil {
 			log.Fatal(err)
 		}
 	}
@@ -91,7 +104,7 @@ func fieldDataAction(args []string, options map[string]string) int {
 		imageDir = current
 	}
 	pathOut, _ := parseOptions(current, options)
-	if err := field.Collect(coordDir, imageDir, pathOut, ".*.tiff"); err != nil {
+	if err := training.Collect(coordDir, imageDir, pathOut, ".*.tiff"); err != nil {
 		log.Fatal(err)
 	}
 	return 0
@@ -100,6 +113,7 @@ func fieldDataAction(args []string, options map[string]string) int {
 func predictAction(args []string, options map[string]string) int {
 	var (
 		ok       bool
+		skip     bool
 		modelDir string
 	)
 	fileIn := args[0]
@@ -108,14 +122,52 @@ func predictAction(args []string, options map[string]string) int {
 		modelDir = path.Join(current, "tf.model")
 	}
 	pathOut, verbose := parseOptions(path.Dir(fileIn), options)
-	fileOut := path.Join(pathOut, "classes-"+path.Base(fileIn))
+	if pathOut == path.Dir(fileIn) {
+		pathOut = path.Join(pathOut, "classification")
+	}
+	_ = os.MkdirAll(pathOut, 0750)
+	fileOut := path.Join(pathOut, path.Base(fileIn))
 	id := 7
 	if idStr, ok := options["id"]; ok {
 		id, _ = strconv.Atoi(idStr)
 	}
-	if err := tensorflow.Predict(modelDir, fileIn, fileOut, 0, 9000, 0, 9000, id, verbose); err != nil {
+	if _, ok = options["skip"]; ok {
+		skip = true
+	}
+	if err := tensorflow.Predict(modelDir, fileIn, fileOut, 0, 9000, 0, 9000, id, skip, verbose); err != nil {
 		log.Fatal(err)
 	}
+	return 0
+}
+
+func filterAction(args []string, options map[string]string) int {
+	var (
+		ok   bool
+		skip bool
+	)
+	algo := args[0]
+	fileIn := args[1]
+	pathOut, verbose := parseOptions(path.Dir(fileIn), options)
+	pathOut = path.Join(pathOut, algo)
+	_ = os.MkdirAll(pathOut, 0750)
+
+	fileOut := path.Join(pathOut, path.Base(fileIn))
+	if _, ok = options["skip"]; ok {
+		skip = true
+	}
+	switch algo {
+	case "3x3":
+		if err := filter.Filter3x3(fileIn, fileOut, skip, verbose); err != nil {
+			log.Fatal(err)
+		}
+	case "5x5":
+		if err := filter.Filter5x5(fileIn, fileOut, skip, verbose); err != nil {
+			log.Fatal(err)
+		}
+	default:
+		log.Fatal("unknown algorithm")
+	}
+
 	return 0
 }
 

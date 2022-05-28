@@ -3,7 +3,6 @@ package tensorflow_test
 import (
 	"encoding/csv"
 	"github.com/nordicsense/landsat/data"
-	"github.com/nordicsense/landsat/field"
 	"github.com/nordicsense/landsat/tensorflow"
 	"io"
 	"log"
@@ -31,7 +30,7 @@ func TestModelPredict(t *testing.T) {
 
 	outcomes, err := model.Predict(data)
 
-	var contmatrix [field.NClasses][field.NClasses]int
+	var contmatrix [training.NClasses][training.NClasses]int
 	matches := 0
 	for i, e := range expected {
 		o := outcomes[i]
