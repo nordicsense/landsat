@@ -33,7 +33,7 @@ func Predict(modelDir, inputTiff, outputTiff string, minx, maxx, miny, maxy int,
 	ip := r.ImageParams().ToBuilder().DataType(gdal.Byte).NaN(0.).Build()
 	rp := r.Reader(1).RasterParams().ToBuilder().Offset(0.).Scale(1.).Build()
 
-	w, err := dataset.NewUniBand(outputTiff, dataset.GTiff, ip, rp)
+	w, err := dataset.NewUniBand(outputTiff, dataset.GTiff, ip, rp, "compress=LZW", "predictor=2")
 	if err != nil {
 		return err
 	}
@@ -64,9 +64,6 @@ func Predict(modelDir, inputTiff, outputTiff string, minx, maxx, miny, maxy int,
 
 	var rrs [7][]float64
 	for y := miny; y < maxy && y < ny; y++ {
-		if verbose {
-			bar.Advance(1)
-		}
 		for band := 0; band < 7; band++ {
 			rrs[band] = make([]float64, dx)
 			if err = ds.RasterBand(band+1).IO(gdal.Read, minx, y, dx, 1, rrs[band], dx, 1, 0, 0); err != nil {
@@ -112,6 +109,9 @@ func Predict(modelDir, inputTiff, outputTiff string, minx, maxx, miny, maxy int,
 		err = wds.IO(gdal.Write, minx, y, dx, 1, row, dx, 1, 0, 0)
 		if err != nil {
 			return err
+		}
+		if verbose {
+			bar.Advance(1)
 		}
 	}
 	if verbose {

@@ -25,7 +25,7 @@ func Filter3x3(inputTiff, outputTiff string, skip, verbose bool) error {
 	ip := r.ImageParams().ToBuilder().Build()
 	rp := r.RasterParams().ToBuilder().Build()
 
-	w, err := dataset.NewUniBand(outputTiff, dataset.GTiff, ip, rp)
+	w, err := dataset.NewUniBand(outputTiff, dataset.GTiff, ip, rp, "compress=LZW", "predictor=2")
 	if err != nil {
 		return err
 	}

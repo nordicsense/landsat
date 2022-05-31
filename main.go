@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/nordicsense/landsat/trim"
 	"log"
 	"os"
 	"path"
@@ -54,11 +55,19 @@ func main() {
 		WithOption(cli.NewOption("verbose", "Verbose mode").WithChar('v').WithType(cli.TypeBool)).
 		WithAction(filterAction)
 
+	trimCmd := cli.NewCommand("trim", "Filter output with a smoothing filter").
+		WithArg(cli.NewArg("data", "Image to trim")).
+		WithOption(cli.NewOption("output", "Output directory (default: same as input)").WithChar('o')).
+		WithOption(cli.NewOption("skip", "Skip existing").WithChar('s').WithType(cli.TypeBool)).
+		WithOption(cli.NewOption("verbose", "Verbose mode").WithChar('v').WithType(cli.TypeBool)).
+		WithAction(trimAction)
+
 	app := cli.New("Normalize and classify Landsat images for the Northern hemisphere").
 		WithCommand(correctCmd).
 		WithCommand(trainingCmd).
 		WithCommand(predictCmd).
-		WithCommand(filterCmd)
+		WithCommand(filterCmd).
+		WithCommand(trimCmd)
 
 	os.Exit(app.Run(os.Args, os.Stdout))
 }
@@ -168,6 +177,26 @@ func filterAction(args []string, options map[string]string) int {
 		log.Fatal("unknown algorithm")
 	}
 
+	return 0
+}
+
+func trimAction(args []string, options map[string]string) int {
+	var (
+		ok   bool
+		skip bool
+	)
+	fileIn := args[0]
+	pathOut, verbose := parseOptions(path.Dir(fileIn), options)
+	pathOut = path.Join(pathOut, "trim")
+	_ = os.MkdirAll(pathOut, 0750)
+
+	fileOut := path.Join(pathOut, path.Base(fileIn))
+	if _, ok = options["skip"]; ok {
+		skip = true
+	}
+	if err := trim.Process(fileIn, fileOut, skip, verbose, trim.TL, trim.TR, trim.BR, trim.BL); err != nil {
+		log.Fatal(err)
+	}
 	return 0
 }
 

@@ -31,14 +31,22 @@ for TIFFNAME in ${ROOT_DIR}/corrected/prod/LT05*.tiff; do
   landsat predict -v -s --id=5 "$TIFFNAME" -m ${RESULTS_DIR}/tf.model -o ${RESULTS_DIR}
 done
 
-# Filter images
+# Trim
 
 for TIFFNAME in ${RESULTS_DIR}/*.tiff; do
+  echo $TIFFNAME
+  landsat trim -v -s "$TIFFNAME"
+done
+
+
+# Filter images
+
+for TIFFNAME in ${RESULTS_DIR}/trim/*.tiff; do
   echo $TIFFNAME
   landsat filter -v -s 3x3 "$TIFFNAME"
 done
 
-for TIFFNAME in ${RESULTS_DIR}/*.tiff; do
+for TIFFNAME in ${RESULTS_DIR}/trim/*.tiff; do
   echo $TIFFNAME
   landsat filter -v -s 5x5 "$TIFFNAME"
 done
