@@ -4,25 +4,25 @@ import (
 	"encoding/csv"
 	"github.com/nordicsense/landsat/data"
 	"github.com/nordicsense/landsat/tensorflow"
+	"github.com/nordicsense/landsat/training"
 	"io"
 	"log"
 	"os"
 	"path"
-	"runtime"
 	"strconv"
 	"testing"
 )
 
 func TestModelPredict(t *testing.T) {
-	_, testFileName, _, _ := runtime.Caller(0)
-	assetsDir := path.Join(path.Dir(testFileName), "test_assets")
 
-	data, expected, err := readTestingSet(path.Join(assetsDir, "trainingdata-test.csv"))
+	root := "/Volumes/Caffeine/Data/Landsat/results/v6-11c-7v"
+
+	data, expected, err := readTestingSet(path.Join(root, "trainingdata", "trainingdata-test.csv"))
 	if err != nil {
 		t.Error(err)
 	}
 
-	model, err := tensorflow.LoadModel(path.Join(assetsDir, "tf.model"))
+	model, err := tensorflow.LoadModel(path.Join(root, "tf.model"))
 	if err != nil {
 		t.Error(err)
 	}

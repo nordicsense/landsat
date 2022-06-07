@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/nordicsense/landsat/stats"
 	"github.com/nordicsense/landsat/trim"
 	"log"
 	"os"
@@ -62,12 +63,19 @@ func main() {
 		WithOption(cli.NewOption("verbose", "Verbose mode").WithChar('v').WithType(cli.TypeBool)).
 		WithAction(trimAction)
 
+	statsCmd := cli.NewCommand("stats", "Filter output with a smoothing filter").
+		WithShortcut("s").
+		WithArg(cli.NewArg("data", "Image to process")).
+		WithOption(cli.NewOption("max", "Max expected number of pixels (default: 25000000)").WithType(cli.TypeInt).WithChar('m')).
+		WithAction(statsAction)
+
 	app := cli.New("Normalize and classify Landsat images for the Northern hemisphere").
 		WithCommand(correctCmd).
 		WithCommand(trainingCmd).
 		WithCommand(predictCmd).
 		WithCommand(filterCmd).
-		WithCommand(trimCmd)
+		WithCommand(trimCmd).
+		WithCommand(statsCmd)
 
 	os.Exit(app.Run(os.Args, os.Stdout))
 }
@@ -187,7 +195,7 @@ func trimAction(args []string, options map[string]string) int {
 	)
 	fileIn := args[0]
 	pathOut, verbose := parseOptions(path.Dir(fileIn), options)
-	pathOut = path.Join(pathOut, "trim")
+	pathOut = path.Join(pathOut, "trimmed")
 	_ = os.MkdirAll(pathOut, 0750)
 
 	fileOut := path.Join(pathOut, path.Base(fileIn))
@@ -195,6 +203,22 @@ func trimAction(args []string, options map[string]string) int {
 		skip = true
 	}
 	if err := trim.Process(fileIn, fileOut, skip, verbose, trim.TL, trim.TR, trim.BR, trim.BL); err != nil {
+		log.Fatal(err)
+	}
+	return 0
+}
+
+func statsAction(args []string, options map[string]string) int {
+
+	maxstr, ok := options["max"]
+	if !ok {
+		maxstr = "25000000"
+	}
+	max, err := strconv.Atoi(maxstr)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err = stats.Collect(args[0], max); err != nil {
 		log.Fatal(err)
 	}
 	return 0

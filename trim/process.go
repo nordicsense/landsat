@@ -35,9 +35,6 @@ func Process(inputTiff, outputTiff string, skip, verbose bool, tl, tr, br, bl da
 	isLeftOfLeft := leftOf(bl, tl, ip)
 	isRightOfRight := leftOf(tr, br, ip)
 
-	// ugly performance workaround
-	ds := r.BreakGlass()
-
 	w, err := dataset.NewUniBand(outputTiff, dataset.GTiff,
 		ip.ToBuilder().DataType(gdal.Byte).NaN(0.).Build(),
 		r.RasterParams().ToBuilder().Offset(0.).Scale(1.).Build(),
@@ -58,6 +55,8 @@ func Process(inputTiff, outputTiff string, skip, verbose bool, tl, tr, br, bl da
 	}
 
 	row := make([]int8, nx)
+	// ugly performance workaround
+	ds := r.BreakGlass()
 	for y := 0; y < ny; y++ {
 		if err = ds.RasterBand(1).IO(gdal.Read, 0, y, nx, 1, row, nx, 1, 0, 0); err != nil {
 			return err

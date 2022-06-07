@@ -76,18 +76,21 @@ func MergeAndApply(pathIn, prefix string, pathOut string, skip, verbose bool, op
 			// apply correction
 			scale := im.Bands[band].RefScale
 			offset := im.Bands[band].RefOffset
+			// generally useless as all the data seems to be missing at the same time
+			if scale == 1.0 && offset == 0.0 && !math.IsNaN(im.Bands[band].RefMax) && !math.IsNaN(im.Bands[band].RefMin) {
+				scale = (im.Bands[band].RefMax - im.Bands[band].RefMin) / 255.
+				offset = im.Bands[band].RefMin
+			}
 			div := math.Sin(im.SunElevation * math.Pi / 180.)
-			if band != 6 {
-				correct := func(v float64) float64 {
-					return (scale*v + offset) / div
-				}
-				for i, v := range buf {
-					buf[i] = correct(v)
-				}
+			correct := func(v float64) float64 {
+				return (scale*v + offset) / div
+			}
+			for i, v := range buf {
+				buf[i] = correct(v)
 			}
 			rpb := r.RasterParams().ToBuilder().Scale(1.0).Offset(0.0).
-				Metadata("REFLECTION_SCALE", format(im.Bands[band].RefScale)).
-				Metadata("REFLECTION_OFFSET", format(im.Bands[band].RefOffset)).
+				Metadata("REFLECTION_SCALE", format(scale)).
+				Metadata("REFLECTION_OFFSET", format(offset)).
 				Metadata("REFLECTION_MIN", format(im.Bands[band].RefMin)).
 				Metadata("REFLECTION_MAX", format(im.Bands[band].RefMax)).
 				Metadata("RADIATION_SCALE", format(im.Bands[band].RadScale)).
