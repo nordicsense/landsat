@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/nordicsense/landsat/change"
 	"github.com/nordicsense/landsat/stats"
 	"github.com/nordicsense/landsat/trim"
 	"log"
@@ -69,13 +70,20 @@ func main() {
 		WithOption(cli.NewOption("max", "Max expected number of pixels (default: 25000000)").WithType(cli.TypeInt).WithChar('m')).
 		WithAction(statsAction)
 
+	changeCmd := cli.NewCommand("change", "Change detection").
+		WithArg(cli.NewArg("from", "2 from images")).
+		WithArg(cli.NewArg("to", "2 to images")).
+		WithOption(cli.NewOption("output", "Output directory (default: same as input)").WithChar('o')).
+		WithAction(changeAction)
+
 	app := cli.New("Normalize and classify Landsat images for the Northern hemisphere").
 		WithCommand(correctCmd).
 		WithCommand(trainingCmd).
 		WithCommand(predictCmd).
 		WithCommand(filterCmd).
 		WithCommand(trimCmd).
-		WithCommand(statsCmd)
+		WithCommand(statsCmd).
+		WithCommand(changeCmd)
 
 	os.Exit(app.Run(os.Args, os.Stdout))
 }
@@ -210,11 +218,11 @@ func trimAction(args []string, options map[string]string) int {
 
 func statsAction(args []string, options map[string]string) int {
 
-	maxstr, ok := options["max"]
+	maxStr, ok := options["max"]
 	if !ok {
-		maxstr = "25000000"
+		maxStr = "25000000"
 	}
-	max, err := strconv.Atoi(maxstr)
+	max, err := strconv.Atoi(maxStr)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -222,6 +230,20 @@ func statsAction(args []string, options map[string]string) int {
 		log.Fatal(err)
 	}
 	return 0
+}
+
+func changeAction(args []string, options map[string]string) int {
+	fromTiffs := strings.Split(args[0], ",")
+	toTiffs := strings.Split(args[1], ",")
+	output, ok := options["output"]
+	if !ok {
+		output, _ = os.Getwd()
+	}
+	if err := change.Collect(fromTiffs, toTiffs, change.TL, change.BR, output); err != nil {
+		log.Fatal(err)
+	}
+	return 0
+
 }
 
 func parseOptions(root string, options map[string]string) (string, bool) {

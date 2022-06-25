@@ -112,7 +112,7 @@ func Collect(tabPath, imgPath, csvPath, imgPattern string) error {
 
 func convert(im string, clazz string, xx []float64) (string, []float64, bool) {
 	var ok bool
-	newclazz, ok := mapping[clazz]
+	newClazz, ok := mapping[clazz]
 	if !ok {
 		return "", nil, false
 	}
@@ -131,5 +131,5 @@ func convert(im string, clazz string, xx []float64) (string, []float64, bool) {
 	case "LC08":
 		landsatId = 8
 	}
-	return newclazz.clazz, data.Transform(xx, landsatId), true
+	return newClazz.clazz, data.Transform(xx, landsatId), true
 }

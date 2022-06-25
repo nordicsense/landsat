@@ -1,12 +1,12 @@
 0 153 153 153 0 missing
-1 38 231 245 255 Cloud
-2 49 112 237 255 Clean Water
-3 157 173 229 255 Water with sediments
-4 68 85 73 255 Non-vegetated / Stone tundra
-5 113 131 122 255 Deciduous w/ birch, willow, grass
-6 255 160 43 255 Burnt areas, mostly new
-7 154 163 52 255 Deciduous, mostly recovered w/ birch
-8 41 111 16 255 Coniferous: 40-60% damaged or pine
-9 19 162 55 255 Coniferous, mostly spruce
-10 51 215 40 255 Wetland, mostly open
-11 195 218 150 255 Dwarf shrub, shrub, lichen
+1 232 241 244 255 Cloud
+2 153 204 255 255 Clean Water
+3 153 153 255 255 Water with sediments
+4 102 102 102 255 Non-vegetated / Stone tundra
+5 204 255 204 255 Deciduous w/ birch willow grass
+6 255 204 204 255 Burnt areas mostly new
+7 153 255 0 255 Deciduous mostly recovered w/ birch
+8 153 204 102 255 Coniferous 40-60% damaged or pine
+9 51 102 51 255 Coniferous mostly spruce
+10 153 102 102 255 Wetland mostly open
+11 153 153 153 255 Dwarf shrub shrub lichen
