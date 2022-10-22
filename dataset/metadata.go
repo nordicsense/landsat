@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -33,7 +34,7 @@ func ParseMetadata(root, prefix string) (ImageMetadata, error) {
 		data  map[string]interface{}
 	)
 
-	fi := path.Join(root, prefix+"_MTL.json")
+	fi := path.Join(root, strings.Replace(prefix, "_SR", "", 1)+"_MTL.json")
 	if jf, err = os.Open(fi); err == nil {
 		defer func() { _ = jf.Close() }()
 		if bytes, err = ioutil.ReadAll(jf); err == nil {

@@ -8,12 +8,13 @@ import (
 	"os"
 	"path"
 	"strconv"
+	"strings"
 
 	"github.com/nordicsense/gdal"
 	"github.com/nordicsense/landsat/dataset"
 )
 
-func MergeAndApply(pathIn, prefix string, pathOut string, skip, verbose bool, options ...string) error {
+func MergeAndApply(pathIn, prefix string, pathOut string, l1, skip, verbose bool, options ...string) error {
 	var (
 		err error
 		fo  = path.Join(pathOut, prefix+".tiff")
@@ -39,7 +40,10 @@ func MergeAndApply(pathIn, prefix string, pathOut string, skip, verbose bool, op
 		fi := path.Join(pathIn, prefix+"_B"+strconv.Itoa(band)+".TIF")
 		if band == 6 {
 			if _, err := os.Stat(fi); errors.Is(err, os.ErrNotExist) {
-				fi = path.Join(pathIn, prefix+"_B6_VCID_1.TIF")
+				fi = path.Join(pathIn, strings.Replace(prefix, "SR", "ST", 1)+"_B6.TIF")
+				if _, err := os.Stat(fi); errors.Is(err, os.ErrNotExist) {
+					fi = path.Join(pathIn, prefix+"_B6_VCID_1.TIF")
+				}
 			}
 		}
 		var r dataset.UniBandReader
@@ -73,34 +77,52 @@ func MergeAndApply(pathIn, prefix string, pathOut string, skip, verbose bool, op
 
 		box := dataset.Box{0, 0, ip.XSize(), ip.YSize()}
 		if buf, err = r.ReadBlock(0, 0, box); err == nil {
+			var dist [10]float64
 			// apply correction
-			scale := im.Bands[band].RefScale
-			offset := im.Bands[band].RefOffset
-			// generally useless as all the data seems to be missing at the same time
-			if scale == 1.0 && offset == 0.0 && !math.IsNaN(im.Bands[band].RefMax) && !math.IsNaN(im.Bands[band].RefMin) {
-				scale = (im.Bands[band].RefMax - im.Bands[band].RefMin) / 255.
-				offset = im.Bands[band].RefMin
+			scale := 2.75e-05
+			offset := -0.2
+			div := 1.0
+			if l1 {
+				scale = im.Bands[band].RefScale
+				offset = im.Bands[band].RefOffset
+				// generally useless as all the data seems to be missing at the same time
+				if scale == 1.0 && offset == 0.0 && !math.IsNaN(im.Bands[band].RefMax) && !math.IsNaN(im.Bands[band].RefMin) {
+					scale = (im.Bands[band].RefMax - im.Bands[band].RefMin) / 255.
+					offset = im.Bands[band].RefMin
+				}
+				div = math.Sin(im.SunElevation * math.Pi / 180.)
 			}
-			div := math.Sin(im.SunElevation * math.Pi / 180.)
 			correct := func(v float64) float64 {
 				return (scale*v + offset) / div
 			}
 			for i, v := range buf {
-				buf[i] = correct(v)
+				v = correct(v)
+				buf[i] = v
+				if !math.IsNaN(v) {
+					j := int(v * 10)
+					if j < 0 {
+						j = 0
+					} else if j > 9 {
+						j = 9
+					}
+					dist[j]++
+				}
 			}
-			rpb := r.RasterParams().ToBuilder().Scale(1.0).Offset(0.0).
-				Metadata("REFLECTION_SCALE", format(scale)).
-				Metadata("REFLECTION_OFFSET", format(offset)).
-				Metadata("REFLECTION_MIN", format(im.Bands[band].RefMin)).
-				Metadata("REFLECTION_MAX", format(im.Bands[band].RefMax)).
-				Metadata("RADIATION_SCALE", format(im.Bands[band].RadScale)).
-				Metadata("RADIATION_OFFSET", format(im.Bands[band].RadOffset)).
-				Metadata("RADIATION_MIN", format(im.Bands[band].RadMin)).
-				Metadata("RADIATION_MAX", format(im.Bands[band].RadMax))
-			//				Metadata("QUANTILES", fmt.Sprintf("1%%: %f, 25%%: %f, 50%%: %f, 75%%: %f, 99%%: %f", dist[0], dist[1], dist[2], dist[3], dist[4]))
-			if band != 6 {
-				rpb = rpb.Metadata("CORRECTION_FORMULA", fmt.Sprintf("(%fx + %f)/%f", scale, offset, div))
+			rpb := r.RasterParams().ToBuilder().Scale(1.0).Offset(0.0)
+
+			if l1 {
+				rpb = rpb.
+					Metadata("REFLECTION_SCALE", format(scale)).
+					Metadata("REFLECTION_OFFSET", format(offset)).
+					Metadata("REFLECTION_MIN", format(im.Bands[band].RefMin)).
+					Metadata("REFLECTION_MAX", format(im.Bands[band].RefMax)).
+					Metadata("RADIATION_SCALE", format(im.Bands[band].RadScale)).
+					Metadata("RADIATION_OFFSET", format(im.Bands[band].RadOffset)).
+					Metadata("RADIATION_MIN", format(im.Bands[band].RadMin)).
+					Metadata("RADIATION_MAX", format(im.Bands[band].RadMax))
 			}
+			rpb = rpb.Metadata("DIST", fmt.Sprintf("%v", dist))
+			rpb = rpb.Metadata("CORRECTION_FORMULA", fmt.Sprintf("(%fx + %f)/%f", scale, offset, div))
 			bw := w.Writer(band)
 			if err = bw.SetRasterParams(rpb.Build()); err == nil {
 				err = bw.WriteBlock(0, 0, box, buf)

@@ -86,7 +86,7 @@ var PathThrough Converter = func(image string, clazz string, data []float64) (st
 	return clazz, data, true
 }
 
-func TrainingData(pathIn, pattern string, coords map[string]coordinateMap, convert Converter) ([]Record, error) {
+func TrainingData(pathIn, pattern string, coords map[string]coordinateMap, images map[string]bool, convert Converter) ([]Record, error) {
 	var (
 		err         error
 		imageFNames []string
@@ -99,7 +99,9 @@ func TrainingData(pathIn, pattern string, coords map[string]coordinateMap, conve
 
 	for _, cm := range coords {
 		for im := range cm {
-			imageNames[im] = true
+			if images[im] {
+				imageNames[im] = true
+			}
 		}
 	}
 
@@ -111,8 +113,20 @@ func TrainingData(pathIn, pattern string, coords map[string]coordinateMap, conve
 				break
 			}
 		}
+
 		if fName == "" {
-			return nil, fmt.Errorf("could not find image for pattern %s", im)
+			// Try L2SP instead of L1TP
+			imx := strings.Replace(im, "L1TP", "L2SP", 1)
+			for _, n := range imageFNames {
+				if strings.Contains(n, imx) {
+					fName = n
+					break
+				}
+			}
+
+			if fName == "" {
+				return nil, fmt.Errorf("could not find image for patterns %s and %s", im, imx)
+			}
 		}
 
 		err = func() error { // for scoping reader closure

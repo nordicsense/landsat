@@ -21,12 +21,13 @@ import (
 // run with e.g. compress=deflate zlevel=6 predictor=3
 // best for float32, see https://kokoalberti.com/articles/geotiff-compression-optimization-guide/
 func main() {
-	correctCmd := cli.NewCommand("correct", "Merge LANSAT bands into a single image applying atmospheric correction").
+	correctCmd := cli.NewCommand("correct", "Merge LANDSAT bands into a single image applying atmospheric correction").
 		WithShortcut("c").
 		WithArg(cli.NewArg("args", "GDAL arguments, e.g. compress=deflate zlevel=6 predictor=3").AsOptional()).
 		WithOption(cli.NewOption("input", "Input directory (default: current)").WithChar('d')).
 		WithOption(cli.NewOption("output", "Output directory (default: same as input)").WithChar('o')).
 		WithOption(cli.NewOption("verbose", "Verbose mode").WithChar('v').WithType(cli.TypeBool)).
+		WithOption(cli.NewOption("l1", "L1 (default: L2, off)").WithChar('l').WithType(cli.TypeBool)).
 		WithOption(cli.NewOption("skip", "Skip existing").WithChar('s').WithType(cli.TypeBool)).
 		WithAction(correctAction)
 
@@ -90,16 +91,19 @@ func main() {
 
 func correctAction(args []string, options map[string]string) int {
 	var (
-		ok, skip bool
-		err      error
-		root     string
-		fNames   []string
+		ok, skip, l1 bool
+		err          error
+		root         string
+		fNames       []string
 	)
 	if root, ok = options["input"]; !ok {
 		root, _ = os.Getwd()
 	}
 	if fNames, err = io.ScanTree(root, ".*_B1.TIF"); err != nil {
 		log.Fatal(err)
+	}
+	if _, ok = options["l1"]; ok {
+		l1 = true
 	}
 	if _, ok = options["skip"]; ok {
 		skip = true
@@ -111,7 +115,7 @@ func correctAction(args []string, options map[string]string) int {
 		if verbose {
 			log.Printf("Merging and correcting %s into %s\n", pathIn, pathOut)
 		}
-		if err := correction.MergeAndApply(pathIn, pattern, pathOut, skip, verbose, args...); err != nil {
+		if err := correction.MergeAndApply(pathIn, pattern, pathOut, l1, skip, verbose, args...); err != nil {
 			log.Fatal(err)
 		}
 	}

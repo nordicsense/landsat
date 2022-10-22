@@ -31,40 +31,40 @@ pdf("band-hists.pdf", width=7.2, height=5.6)
 par(mfrow=c(2,3))
 
 plot(c(0,0.5), c(0,0.3), xlim=c(0,0.3), ylim=c(0,0.2), type="n",
-    main="Band 1 (L5/L7) / Band 2 (L8)", xlab="Corrected band value", ylab = "Frequency") # ylim=c(1e-5,1e-1), log='y')
-lines(x, L5$band1/sum(L5$band1), col="red", lwd=2)
-lines(x, L7$band1/sum(L7$band1), col="green", lwd=2)
-lines(x, L8$band1/sum(L8$band1), col="blue", lwd=2)
+    main="Band 1 (L5/L7) / Band 2 (L8)", xlab="Reflectance", ylab = "Frequency") # ylim=c(1e-5,1e-1), log='y')
+lines(x, L5$band1/sum(L5$band1), col="#6aa84f", lwd=2)
+lines(x, L7$band1/sum(L7$band1), col="#4a86e8", lwd=2)
+lines(x, L8$band1/sum(L8$band1), col="#f79646", lwd=2)
 
 plot(c(0,0.5), c(0,0.3), xlim=c(0,0.3), ylim=c(0,0.2), type="n",
-    main="Band 2 (L5/L7) / Band 3 (L8)", xlab="Corrected band value", ylab = "Frequency") # ylim=c(1e-5,1e-1), log='y')
-lines(x, L5$band2/sum(L5$band2), col="red", lwd=2)
-lines(x, L7$band2/sum(L7$band2), col="green", lwd=2)
-lines(x, L8$band2/sum(L8$band2), col="blue", lwd=2)
+    main="Band 2 (L5/L7) / Band 3 (L8)", xlab="Reflectance", ylab = "Frequency") # ylim=c(1e-5,1e-1), log='y')
+lines(x, L5$band2/sum(L5$band2), col="#6aa84f", lwd=2)
+lines(x, L7$band2/sum(L7$band2), col="#4a86e8", lwd=2)
+lines(x, L8$band2/sum(L8$band2), col="#f79646", lwd=2)
 
 plot(c(0,0.5), c(0,0.3), xlim=c(0,0.3), ylim=c(0,0.2), type="n",
-    main="Band 3 (L5/L7) / Band 4 (L8)", xlab="Corrected band value", ylab = "Frequency") # ylim=c(1e-5,1e-1), log='y')
-lines(x, L5$band3/sum(L5$band3), col="red", lwd=2)
-lines(x, L7$band3/sum(L7$band3), col="green", lwd=2)
-lines(x, L8$band3/sum(L8$band3), col="blue", lwd=2)
+    main="Band 3 (L5/L7) / Band 4 (L8)", xlab="Reflectance", ylab = "Frequency") # ylim=c(1e-5,1e-1), log='y')
+lines(x, L5$band3/sum(L5$band3), col="#6aa84f", lwd=2)
+lines(x, L7$band3/sum(L7$band3), col="#4a86e8", lwd=2)
+lines(x, L8$band3/sum(L8$band3), col="#f79646", lwd=2)
 
 plot(c(0,0.5), c(0,0.3), xlim=c(0,0.3), ylim=c(0,0.2), type="n",
-    main="Band 4 (L5/L7) / Band 5 (L8)", xlab="Corrected band value", ylab = "Frequency") # ylim=c(1e-5,1e-1), log='y')
-lines(x, L5$band4/sum(L5$band4), col="red", lwd=2)
-lines(x, L7$band4/sum(L7$band4), col="green", lwd=2)
-lines(x, L8$band4/sum(L8$band4), col="blue", lwd=2)
+    main="Band 4 (L5/L7) / Band 5 (L8)", xlab="Reflectance", ylab = "Frequency") # ylim=c(1e-5,1e-1), log='y')
+lines(x, L5$band4/sum(L5$band4), col="#6aa84f", lwd=2)
+lines(x, L7$band4/sum(L7$band4), col="#4a86e8", lwd=2)
+lines(x, L8$band4/sum(L8$band4), col="#f79646", lwd=2)
 
 plot(c(0,0.5), c(0,0.3), xlim=c(0,0.3), ylim=c(0,0.2), type="n",
-    main="Band 5 (L5/L7) / Band 6 (L8)", xlab="Corrected band value", ylab = "Frequency") # ylim=c(1e-5,1e-1), log='y')
-lines(x, L5$band5/sum(L5$band5), col="red", lwd=2)
-lines(x, L7$band5/sum(L7$band5), col="green", lwd=2)
-lines(x, L8$band5/sum(L8$band5), col="blue", lwd=2)
+    main="Band 5 (L5/L7) / Band 6 (L8)", xlab="Reflectance", ylab = "Frequency") # ylim=c(1e-5,1e-1), log='y')
+lines(x, L5$band5/sum(L5$band5), col="#6aa84f", lwd=2)
+lines(x, L7$band5/sum(L7$band5), col="#4a86e8", lwd=2)
+lines(x, L8$band5/sum(L8$band5), col="#f79646", lwd=2)
 
 plot(c(0,0.5), c(0,0.3), xlim=c(0,0.3), ylim=c(0,0.2), type="n",
-    main="Band 7 (L5/L7) / Band 7 (L8)", xlab="Corrected band value", ylab = "Frequency") # ylim=c(1e-5,1e-1), log='y')
-lines(x, L5$band7/sum(L5$band7), col="red", lwd=2)
-lines(x, L7$band7/sum(L7$band7), col="green", lwd=2)
-lines(x, L8$band7/sum(L8$band7), col="blue", lwd=2)
-legend("topright", legend=c("Landsat 5", "Landsat 7", "Landsat 8"), col=c("red", "green", "blue"), lwd=2)
+    main="Band 7 (L5/L7) / Band 7 (L8)", xlab="Reflectance", ylab = "Frequency") # ylim=c(1e-5,1e-1), log='y')
+lines(x, L5$band7/sum(L5$band7), col="#6aa84f", lwd=2)
+lines(x, L7$band7/sum(L7$band7), col="#4a86e8", lwd=2)
+lines(x, L8$band7/sum(L8$band7), col="#f79646", lwd=2)
+legend("topright", legend=c("Landsat 5", "Landsat 7", "Landsat 8"), col=c("#6aa84f", "#4a86e8", "#f79646"), lwd=2)
 
 dev.off()

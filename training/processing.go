@@ -99,7 +99,7 @@ func Collect(tabPath, imgPath, csvPath, imgPattern string) error {
 	if err != nil {
 		return err
 	}
-	recs, err := collector.TrainingData(imgPath, imgPattern, coord, convert)
+	recs, err := collector.TrainingData(imgPath, imgPattern, coord, images, convert)
 	if err != nil {
 		return err
 	}
