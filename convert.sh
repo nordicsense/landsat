@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 
 export LIBRARY_PATH=/opt/homebrew/lib
-export VERSION=v7-11c-7v
+export VERSION=v8-26c-10v
 
 export RESULTS_DIR=/Volumes/Caffeine/Data/Landsat/results/${VERSION}
 export ROOT_DIR=/Volumes/Caffeine/Data/Landsat
@@ -42,11 +42,6 @@ done
 
 
 # Filter images
-
-for TIFFNAME in ${RESULTS_DIR}/trimmed/*.tiff; do
-  echo $TIFFNAME
-  landsat filter -v -s 3x3 "$TIFFNAME" -o ${RESULTS_DIR}
-done
 
 for TIFFNAME in ${RESULTS_DIR}/trimmed/*.tiff; do
   echo $TIFFNAME

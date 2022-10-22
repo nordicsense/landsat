@@ -113,7 +113,7 @@ func Collect(fromTiffs, toTiffs []string, tl, br dataset.LatLon, outputDir strin
 	return nil
 }
 
-func merge(ip *dataset.ImageParams, f0 dataset.UniBandReader, t0 dataset.UniBandReader, x0f, yyf, x0t, yyt int, m *[11][11]int, dsMap map[dataset.UniBandReader]gdal.RasterBand) ([]float64, error) {
+func merge(ip *dataset.ImageParams, f0 dataset.UniBandReader, t0 dataset.UniBandReader, x0f, yyf, x0t, yyt int, m *[training.NClasses][training.NClasses]int, dsMap map[dataset.UniBandReader]gdal.RasterBand) ([]float64, error) {
 	row := make([]float64, f0.ImageParams().XSize())
 	if err := dsMap[f0].IO(gdal.Read, 0, yyf, f0.ImageParams().XSize(), 1, row, f0.ImageParams().XSize(), 1, 0, 0); err != nil {
 		return nil, err
