@@ -18,40 +18,29 @@ var (
 
 func init() {
 	accepted_mismatch = map[int]map[int]bool{
+		2: {
+			3: true,
+		},
 		3: {
-			4: true,
-			8: true,
+			2: true,
 		},
 		4: {
-			3: true,
-			8: true,
+			5: true,
 		},
 		5: {
-			6:  true,
-			16: true,
-		},
-		6: {
-			5:  true,
-			16: true,
-		},
-		8: {
-			3: true,
 			4: true,
 		},
-		10: {
-			14: true,
-		},
-		11: {
-			15: true,
-		},
-		14: {
+		6: {
+			7:  true,
 			10: true,
 		},
-		15: {
-			11: true,
+		7: {
+			6:  true,
+			10: true,
 		},
-		16: {
-			5: true,
+		10: {
+			6: true,
+			7: true,
 		},
 	}
 }

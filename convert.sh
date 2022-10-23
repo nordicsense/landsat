@@ -3,7 +3,7 @@
 export LIBRARY_PATH=/opt/homebrew/lib
 
 
-export VERSION=v10-16c-10v
+export VERSION=v11-11c-10v
 export RESULTS_DIR=/Volumes/Caffeine/Data/Landsat/results/${VERSION}
 export ROOT_DIR=/Volumes/Caffeine/Data/Landsat
 
@@ -18,7 +18,8 @@ mkdir -p ${RESULTS_DIR}/trainingdata
 landsat training ${ROOT_DIR}/sources/training-coordinates -d ${ROOT_DIR}/corrected/training -o ${RESULTS_DIR}/trainingdata/trainingdata
 
 # Train the model here
-# conda activate landsat
+conda activate landsat
+python tensorflow/train_save_model.py
 
 for TIFFNAME in ${ROOT_DIR}/corrected/prod/LC08*.tiff; do
   echo $TIFFNAME
