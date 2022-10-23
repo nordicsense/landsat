@@ -17,17 +17,20 @@ type classIdMap struct {
 
 var (
 	mapping = map[string]classIdMap{
-		"cloud":                   {"cloud", 0},
+		"cloud": {"cloud", 0},
+
 		"water_with_no_sediments": {"water", 1},
-		"wet_tailing_pond":        {"water-dam", 2},
-		"water_with_sediments":    {"water-dam", 2},
-		"very_wet_tailing_pond":   {"water-dam", 2},
-		"industrial_water":        {"water-dam", 2},
-		"dry_tailing_pond":        {"non-veg", 3},
-		"residential_area":        {"non-veg", 3},
-		"asphalt":                 {"non-veg", 3},
-		"quarry":                  {"non-veg", 3},
-		"industrial_area":         {"non-veg", 3},
+
+		"wet_tailing_pond":      {"water-dam", 2},
+		"water_with_sediments":  {"water-dam", 2},
+		"very_wet_tailing_pond": {"water-dam", 2},
+		"industrial_water":      {"water-dam", 2},
+
+		"dry_tailing_pond": {"non-veg", 3},
+		"residential_area": {"non-veg", 3},
+		"asphalt":          {"non-veg", 3},
+		"quarry":           {"non-veg", 3},
+		"industrial_area":  {"non-veg", 3},
 		"human_technogenic_barren_almost_with_no_vegetation": {"non-veg", 3},
 		"road":                   {"non-veg", 3},
 		"human_severely_damaged": {"non-veg", 3},
@@ -67,11 +70,8 @@ var (
 		"LE07_L1TP_186012_20000728": true,
 		"LT05_L1TP_188012_19860728": true,
 
-		"LE07_L1TP_188012_20000726": true, // damaged-spruce
-		"LT05_L1TP_190012_19930713": true, // wetland-open-water
-
-		"LE07_L1TP_195011_20000727": false, // false
-		"LE07_L1TP_195012_20000727": false, // wetland_with_grass_moss_dwarf_shrub, can neglect
+		"LE07_L1TP_188012_20000726": true,
+		"LT05_L1TP_190012_19930713": true,
 	}
 
 	r             *rand.Rand
