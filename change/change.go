@@ -12,7 +12,63 @@ import (
 var (
 	TL = dataset.LatLon{7674459, 355738} // sin
 	BR = dataset.LatLon{7339883, 593636}
+
+	accepted_mismatch map[int]map[int]bool
 )
+
+func init() {
+	accepted_mismatch = map[int]map[int]bool{
+		3: {
+			4: true,
+			8: true,
+		},
+		4: {
+			3: true,
+			8: true,
+		},
+		5: {
+			6:  true,
+			18: true,
+		},
+		6: {
+			5:  true,
+			18: true,
+		},
+		8: {
+			3: true,
+			4: true,
+		},
+		10: {
+			17: true,
+		},
+		11: {
+			17: true,
+		},
+		13: {
+			14: true,
+		},
+		14: {
+			13: true,
+			15: true,
+		},
+		15: {
+			14: true,
+			17: true,
+		},
+		16: {
+			17: true,
+		},
+		17: {
+			10: true,
+			11: true,
+			15: true,
+			16: true,
+		},
+		18: {
+			5: true,
+		},
+	}
+}
 
 func Collect(fromTiffs, toTiffs []string, tl, br dataset.LatLon, outputDir string) error {
 
@@ -146,13 +202,17 @@ func merge(ip *dataset.ImageParams, f0 dataset.UniBandReader, t0 dataset.UniBand
 	row = make([]float64, ip.XSize())
 	for i, fv := range fRow {
 		tv := tRow[i]
-		if fv != 0 && tv != 0 {
-			if fv == tv {
+		tvi := int(tv)
+		fvi := int(fv)
+		if fvi != 0 && tvi != 0 {
+			if fvi == tvi {
 				row[i] = fv
+			} else if accepted_mismatch[fvi][tvi] {
+				row[i] = tv
 			} else {
 				row[i] = -1.
 			}
-			m[int(fv)-1][int(tv)-1]++
+			m[fvi-1][tvi-1]++
 		}
 	}
 	return row, nil

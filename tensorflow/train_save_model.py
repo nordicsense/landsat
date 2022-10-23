@@ -4,7 +4,7 @@ import tensorflow as tf
 import tensorflow.keras.layers as layers
 import tensorflow.keras.losses as losses
 
-nClasses = 26
+nClasses = 18
 
 root = os.environ.get("RESULTS_DIR")
 

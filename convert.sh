@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 
 export LIBRARY_PATH=/opt/homebrew/lib
-export VERSION=v8-26c-10v
+export VERSION=v9-18c-10v
 
 export RESULTS_DIR=/Volumes/Caffeine/Data/Landsat/results/${VERSION}
 export ROOT_DIR=/Volumes/Caffeine/Data/Landsat

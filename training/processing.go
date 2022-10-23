@@ -39,30 +39,37 @@ var (
 
 		"agricultural_field_grass_birch_willow": {"agricultural_field_grass_birch_willow", 5},
 
-		"natural_undam_grey_willow_with_dwarf_shrub_grass": {"natural_undam_grey_willow_with_dwarf_shrub_grass", 6},
+		"natural_undam_grey_willow_with_dwarf_shrub_grass": {"wetland", 6},
+		"wetland_with_dwarf_shrub_grass":                   {"wetland", 6},
+		"wetland_with_dwarf_shrub_moss_grass":              {"wetland", 6},
+		"wetland_with_grass_moss_dwarf_shrub":              {"wetland", 6}, // only: LE07_L1TP_195012_20000727
 
-		"wetland_with_dwarf_shrub_and_open_water":                      {"wetland_with_dwarf_shrub_and_open_water", 7},
-		"wetland_with_dwarf_shrub_grass":                               {"wetland_with_dwarf_shrub_grass", 8},
-		"wetland_turf":                                                 {"wetland_turf", 9},
-		"wetland_with_dwarf_shrub_moss_grass":                          {"wetland_with_dwarf_shrub_moss_grass", 10},
-		"wetland_with_grass_moss_dwarf_shrub":                          {"wetland_with_grass_moss_dwarf_shrub", 11}, // only: LE07_L1TP_195012_20000727
-		"human_moderately_damaged_spruce_forest":                       {"human_moderately_damaged_spruce_forest", 12},
-		"human_mostly_damaged_birch_spruce":                            {"human_mostly_damaged_birch_spruce", 13},
-		"new_burnt_area":                                               {"new_burnt_area", 14},
-		"old_burnt_area":                                               {"old_burnt_area", 15},
-		"natural_undam_pine_forest_with_dwarf_shrub_and_lichen":        {"natural_undam_pine_forest_with_dwarf_shrub_and_lichen", 16},
-		"natural_undam_spruce_forest_with_dwarf_shrub_and_moss-lichen": {"natural_undam_spruce_forest_with_dwarf_shrub_and_moss-lichen", 17},
-		"natural_undam_pine_forest_with_dwarf_shrub_and_moss-lichen":   {"natural_undam_pine_forest_with_dwarf_shrub_and_moss-lichen", 18},
-		"natural_undam_pine_forest_with_dwarf_shrub":                   {"natural_undam_pine_forest_with_dwarf_shrub", 19},
-		"natural_undam_pine_spruce_forest_with_dwarf_shrub":            {"natural_undam_pine_spruce_forest_with_dwarf_shrub", 20},
-		"natural_undam_spruce_forest_with_dwarf_shrub":                 {"natural_undam_spruce_forest_with_dwarf_shrub", 21},
-		"natural_undam_birch_forest_with_dwarf_shrub_lichen":           {"natural_undam_birch_forest_with_dwarf_shrub_lichen", 22},
-		//"natural_undam_birch_forest_with_lichen_dwarf_shrub":           {"natural_undam_birch_forest_with_lichen_dwarf_shrub", 23}, // only: LE07_L1TP_195011_20000727
-		"natural_undam_birch_forest_with_grass":              {"natural_undam_birch_forest_with_grass", 23}, // separate
-		"natural_undam_birch_spruce_forest_with_moss_lichen": {"natural_undam_birch_spruce_forest_with_moss_lichen", 24},
-		"tundra_undam_lichen_dwarf_shrub":                    {"veg-tundra", 25},
-		"tundra_undam_lichen":                                {"veg-tundra", 25},
-		"tundra_undam_stone_with_lichen":                     {"veg-tundra", 25},
+		"wetland_with_dwarf_shrub_and_open_water": {"wetland_open_water", 7},
+		"wetland_turf": {"wetland_turf", 8},
+
+		"human_moderately_damaged_spruce_forest": {"human_moderately_damaged_spruce_forest", 9},
+		"human_mostly_damaged_birch_spruce":      {"human_mostly_damaged_birch_spruce", 10},
+
+		"new_burnt_area": {"burnt", 11},
+		"old_burnt_area": {"burnt", 11},
+
+		"natural_undam_pine_forest_with_dwarf_shrub_and_lichen":      {"pine", 12},
+		"natural_undam_pine_forest_with_dwarf_shrub_and_moss-lichen": {"pine", 12},
+		"natural_undam_pine_forest_with_dwarf_shrub":                 {"pine", 12},
+
+		"natural_undam_pine_spruce_forest_with_dwarf_shrub": {"pine/spruce", 13},
+
+		"natural_undam_spruce_forest_with_dwarf_shrub_and_moss-lichen": {"spruce", 14},
+		"natural_undam_spruce_forest_with_dwarf_shrub":                 {"spruce", 14},
+
+		"natural_undam_birch_forest_with_dwarf_shrub_lichen": {"birch", 15},
+		"natural_undam_birch_forest_with_grass":              {"birch", 15},
+
+		"natural_undam_birch_spruce_forest_with_moss_lichen": {"birch/spruce", 16},
+
+		"tundra_undam_lichen_dwarf_shrub": {"veg-tundra", 17},
+		"tundra_undam_lichen":             {"veg-tundra", 17},
+		"tundra_undam_stone_with_lichen":  {"veg-tundra", 17},
 	}
 
 	images = map[string]bool{
@@ -82,7 +89,7 @@ var (
 	ClassIdToName map[int]string
 )
 
-const NClasses = 26
+const NClasses = 18
 
 func init() {
 	r = rand.New(rand.NewSource(42))
@@ -99,7 +106,7 @@ func init() {
 
 const (
 	trainFraction = 0.9
-	clazzSize     = 40000
+	clazzSize     = 50000
 	testSize      = 4000
 )
 
