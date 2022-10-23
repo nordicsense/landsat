@@ -28,43 +28,29 @@ func init() {
 		},
 		5: {
 			6:  true,
-			18: true,
+			16: true,
 		},
 		6: {
 			5:  true,
-			18: true,
+			16: true,
 		},
 		8: {
 			3: true,
 			4: true,
 		},
 		10: {
-			17: true,
+			14: true,
 		},
 		11: {
-			17: true,
-		},
-		13: {
-			14: true,
+			15: true,
 		},
 		14: {
-			13: true,
-			15: true,
+			10: true,
 		},
 		15: {
-			14: true,
-			17: true,
+			11: true,
 		},
 		16: {
-			17: true,
-		},
-		17: {
-			10: true,
-			11: true,
-			15: true,
-			16: true,
-		},
-		18: {
 			5: true,
 		},
 	}

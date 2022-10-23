@@ -57,19 +57,15 @@ var (
 		"natural_undam_pine_forest_with_dwarf_shrub_and_moss-lichen": {"pine", 12},
 		"natural_undam_pine_forest_with_dwarf_shrub":                 {"pine", 12},
 
-		"natural_undam_pine_spruce_forest_with_dwarf_shrub": {"pine/spruce", 13},
+		"natural_undam_spruce_forest_with_dwarf_shrub_and_moss-lichen": {"spruce", 13},
+		"natural_undam_spruce_forest_with_dwarf_shrub":                 {"spruce", 13},
 
-		"natural_undam_spruce_forest_with_dwarf_shrub_and_moss-lichen": {"spruce", 14},
-		"natural_undam_spruce_forest_with_dwarf_shrub":                 {"spruce", 14},
+		"natural_undam_birch_forest_with_dwarf_shrub_lichen": {"birch", 14},
+		"natural_undam_birch_forest_with_grass":              {"birch", 14},
 
-		"natural_undam_birch_forest_with_dwarf_shrub_lichen": {"birch", 15},
-		"natural_undam_birch_forest_with_grass":              {"birch", 15},
-
-		"natural_undam_birch_spruce_forest_with_moss_lichen": {"birch/spruce", 16},
-
-		"tundra_undam_lichen_dwarf_shrub": {"veg-tundra", 17},
-		"tundra_undam_lichen":             {"veg-tundra", 17},
-		"tundra_undam_stone_with_lichen":  {"veg-tundra", 17},
+		"tundra_undam_lichen_dwarf_shrub": {"veg-tundra", 15},
+		"tundra_undam_lichen":             {"veg-tundra", 15},
+		"tundra_undam_stone_with_lichen":  {"veg-tundra", 15},
 	}
 
 	images = map[string]bool{
@@ -89,7 +85,7 @@ var (
 	ClassIdToName map[int]string
 )
 
-const NClasses = 18
+const NClasses = 16
 
 func init() {
 	r = rand.New(rand.NewSource(42))
