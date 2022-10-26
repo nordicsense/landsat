@@ -2,7 +2,7 @@
 
 ## General capabilities
 
-* Landsat L5, L7, L8 atmospheric correction based on stored metadata
+* Landsat L5, L7, L8 atmospheric convertion based on stored metadata
 * Landsat band aggregation into multi-layer TIFFs
 * Collection of training data from mult-layer Landsat TIFF images using the mapping of coordinates to images and classes
 * Training and validating a Tensorflow based classifier for Landsat landcover
@@ -10,7 +10,7 @@
 
 ## End-to-end run-through
 
-Collect data from sources: images for training and final output as well as training data by extracting corrected data
+Collect data from sources: images for training and final output as well as training data by extracting converted data
 from images at the locations provided in the training data set. 
 
 Place source Landsat images for training data with all single-band tiffs and metadata in a directory per image, 
@@ -23,19 +23,19 @@ Place directories with coordinates of points for training data e.g. under
 Now run:
 
 ```shell
-mkdir -p /Volumes/Caffeine/Data/Landsat/corrected/training
-landsat correct -v -s \
+mkdir -p /Volumes/Caffeine/Data/Landsat/converted/training
+landsat convert -v -s \
   -d /Volumes/Caffeine/Data/Landsat/sources/training \
-  -o /Volumes/Caffeine/Data/Landsat/corrected/training # compress=deflate zlevel=6 predictor=3
+  -o /Volumes/Caffeine/Data/Landsat/converted/training # compress=deflate zlevel=6 predictor=3
 
-mkdir -p /Volumes/Caffeine/Data/Landsat/corrected/prod
-landsat correct -v -s \
+mkdir -p /Volumes/Caffeine/Data/Landsat/converted/prod
+landsat convert -v -s \
   -d /Volumes/Caffeine/Data/Landsat/sources/prod \
-  -o /Volumes/Caffeine/Data/Landsat/corrected/prod # compress=deflate zlevel=6 predictor=3
+  -o /Volumes/Caffeine/Data/Landsat/converted/prod # compress=deflate zlevel=6 predictor=3
 
 mkdir -p /Volumes/Caffeine/Data/Landsat/trainingdata
 landsat field /Volumes/Caffeine/Data/Landsat/sources/training-coordinates \
-  -d /Volumes/Caffeine/Data/Landsat/corrected/training \
+  -d /Volumes/Caffeine/Data/Landsat/converted/training \
   -o /Volumes/Caffeine/Data/Landsat/trainingdata
 ```
 
@@ -46,7 +46,7 @@ Run the classification of all images:
 ```shell
 
 mkdir -p /Volumes/Caffeine/Data/Landsat/classification
-for TIFFNAME in /Volumes/Caffeine/Data/Landsat/corrected/prod/*.tiff; do
+for TIFFNAME in /Volumes/Caffeine/Data/Landsat/converted/prod/*.tiff; do
   echo $TIFFNAME
   landsat predict -v "$TIFFNAME" \
     -m /Volumes/Caffeine/Data/Landsat/tf.model \
