@@ -1,4 +1,4 @@
-package training
+package classification
 
 import (
 	"fmt"
@@ -7,7 +7,6 @@ import (
 	"math/rand"
 
 	"github.com/nordicsense/landsat/data"
-	"github.com/nordicsense/landsat/training/collector"
 )
 
 type classIdMap struct {
@@ -100,20 +99,20 @@ const (
 	testSize      = 3000
 )
 
-func Collect(tabPath, imgPath, csvPath, imgPattern string) error {
-	coord, err := collector.CollectCoordinates(tabPath)
+func CollectTrainingData(tabPath, imgPath, csvPath, imgPattern string) error {
+	coord, err := data.CollectCoordinates(tabPath)
 	if err != nil {
 		return err
 	}
-	recs, err := collector.TrainingData(imgPath, imgPattern, coord, images, convert)
+	recs, err := data.TrainingData(imgPath, imgPattern, coord, images, convert)
 	if err != nil {
 		return err
 	}
-	train, test := collector.Subsample(recs, ClassNameToId, clazzSize, testSize, r, trainFraction)
-	if err = collector.DumpCSV(csvPath+".csv", train, ClassNameToId); err != nil {
+	train, test := data.Subsample(recs, ClassNameToId, clazzSize, testSize, r, trainFraction)
+	if err = data.DumpCSV(csvPath+".csv", train, ClassNameToId); err != nil {
 		return err
 	}
-	if err = collector.DumpCSV(csvPath+"-test.csv", test, ClassNameToId); err != nil {
+	if err = data.DumpCSV(csvPath+"-test.csv", test, ClassNameToId); err != nil {
 		return err
 	}
 

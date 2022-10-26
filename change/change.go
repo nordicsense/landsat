@@ -3,8 +3,8 @@ package change
 import (
 	"fmt"
 	"github.com/nordicsense/gdal"
+	"github.com/nordicsense/landsat/classification"
 	"github.com/nordicsense/landsat/dataset"
-	"github.com/nordicsense/landsat/training"
 	"github.com/vardius/progress-go"
 	"path"
 )
@@ -100,7 +100,7 @@ func Collect(fromTiffs, toTiffs []string, tl, br dataset.LatLon, outputDir strin
 	dsMap[t0] = t0.BreakGlass().RasterBand(1)
 	dsMap[t1] = t1.BreakGlass().RasterBand(1)
 
-	var m [training.NClasses][training.NClasses]int
+	var m [classification.NClasses][classification.NClasses]int
 	for y := 0; y < ny; y++ {
 		ll := tf.Pixels2LatLon(0, y)
 
@@ -144,7 +144,7 @@ func Collect(fromTiffs, toTiffs []string, tl, br dataset.LatLon, outputDir strin
 	return nil
 }
 
-func merge(ip *dataset.ImageParams, f0 dataset.UniBandReader, t0 dataset.UniBandReader, x0f, yyf, x0t, yyt int, m *[training.NClasses][training.NClasses]int, dsMap map[dataset.UniBandReader]gdal.RasterBand) ([]float64, error) {
+func merge(ip *dataset.ImageParams, f0 dataset.UniBandReader, t0 dataset.UniBandReader, x0f, yyf, x0t, yyt int, m *[classification.NClasses][classification.NClasses]int, dsMap map[dataset.UniBandReader]gdal.RasterBand) ([]float64, error) {
 	row := make([]float64, f0.ImageParams().XSize())
 	if err := dsMap[f0].IO(gdal.Read, 0, yyf, f0.ImageParams().XSize(), 1, row, f0.ImageParams().XSize(), 1, 0, 0); err != nil {
 		return nil, err
@@ -180,10 +180,12 @@ func merge(ip *dataset.ImageParams, f0 dataset.UniBandReader, t0 dataset.UniBand
 		tvi := int(tv)
 		fvi := int(fv)
 		if fvi != 0 && tvi != 0 {
+			if accepted_mismatch[fvi][tvi] {
+				tvi = fvi
+				tv = fv
+			}
 			if fvi == tvi {
 				row[i] = fv
-			} else if accepted_mismatch[fvi][tvi] {
-				row[i] = tv
 			} else {
 				row[i] = -1.
 			}

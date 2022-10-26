@@ -1,27 +1,25 @@
 package main
 
 import (
-	"github.com/nordicsense/landsat/change"
-	"github.com/nordicsense/landsat/stats"
-	"github.com/nordicsense/landsat/trim"
+	"github.com/nordicsense/landsat/classification"
 	"log"
 	"os"
 	"path"
 	"strconv"
 	"strings"
 
-	"github.com/nordicsense/landsat/correction"
+	"github.com/nordicsense/landsat/change"
+	"github.com/nordicsense/landsat/conversion"
 	"github.com/nordicsense/landsat/filter"
 	"github.com/nordicsense/landsat/io"
-	"github.com/nordicsense/landsat/tensorflow"
-	"github.com/nordicsense/landsat/training"
+	"github.com/nordicsense/landsat/trim"
 	"github.com/teris-io/cli"
 )
 
 // run with e.g. compress=deflate zlevel=6 predictor=3
 // best for float32, see https://kokoalberti.com/articles/geotiff-compression-optimization-guide/
 func main() {
-	correctCmd := cli.NewCommand("correct", "Merge LANDSAT bands into a single image applying atmospheric correction").
+	convertCmd := cli.NewCommand("convert", "Merge LANDSAT bands into a single image").
 		WithShortcut("c").
 		WithArg(cli.NewArg("args", "GDAL arguments, e.g. compress=deflate zlevel=6 predictor=3").AsOptional()).
 		WithOption(cli.NewOption("input", "Input directory (default: current)").WithChar('d')).
@@ -29,7 +27,7 @@ func main() {
 		WithOption(cli.NewOption("verbose", "Verbose mode").WithChar('v').WithType(cli.TypeBool)).
 		WithOption(cli.NewOption("l1", "L1 (default: L2, off)").WithChar('l').WithType(cli.TypeBool)).
 		WithOption(cli.NewOption("skip", "Skip existing").WithChar('s').WithType(cli.TypeBool)).
-		WithAction(correctAction)
+		WithAction(convertAction)
 
 	trainingCmd := cli.NewCommand("training", "Collect training data from field data").
 		WithShortcut("t").
@@ -65,12 +63,6 @@ func main() {
 		WithOption(cli.NewOption("verbose", "Verbose mode").WithChar('v').WithType(cli.TypeBool)).
 		WithAction(trimAction)
 
-	statsCmd := cli.NewCommand("stats", "Filter output with a smoothing filter").
-		WithShortcut("s").
-		WithArg(cli.NewArg("data", "Image to process")).
-		WithOption(cli.NewOption("max", "Max expected number of pixels (default: 25000000)").WithType(cli.TypeInt).WithChar('m')).
-		WithAction(statsAction)
-
 	changeCmd := cli.NewCommand("change", "Change detection").
 		WithArg(cli.NewArg("from", "2 from images")).
 		WithArg(cli.NewArg("to", "2 to images")).
@@ -78,18 +70,17 @@ func main() {
 		WithAction(changeAction)
 
 	app := cli.New("Normalize and classify Landsat images for the Northern hemisphere").
-		WithCommand(correctCmd).
+		WithCommand(convertCmd).
 		WithCommand(trainingCmd).
 		WithCommand(predictCmd).
 		WithCommand(filterCmd).
 		WithCommand(trimCmd).
-		WithCommand(statsCmd).
 		WithCommand(changeCmd)
 
 	os.Exit(app.Run(os.Args, os.Stdout))
 }
 
-func correctAction(args []string, options map[string]string) int {
+func convertAction(args []string, options map[string]string) int {
 	var (
 		ok, skip, l1 bool
 		err          error
@@ -115,7 +106,7 @@ func correctAction(args []string, options map[string]string) int {
 		if verbose {
 			log.Printf("Merging and correcting %s into %s\n", pathIn, pathOut)
 		}
-		if err := correction.MergeAndApply(pathIn, pattern, pathOut, l1, skip, verbose, args...); err != nil {
+		if err := conversion.MergeAndApply(pathIn, pattern, pathOut, l1, skip, verbose, args...); err != nil {
 			log.Fatal(err)
 		}
 	}
@@ -133,7 +124,7 @@ func fieldDataAction(args []string, options map[string]string) int {
 		imageDir = current
 	}
 	pathOut, _ := parseOptions(current, options)
-	if err := training.Collect(coordDir, imageDir, pathOut, ".*.tiff"); err != nil {
+	if err := classification.CollectTrainingData(coordDir, imageDir, pathOut, ".*.tiff"); err != nil {
 		log.Fatal(err)
 	}
 	return 0
@@ -163,7 +154,7 @@ func predictAction(args []string, options map[string]string) int {
 	if _, ok = options["skip"]; ok {
 		skip = true
 	}
-	if err := tensorflow.Predict(modelDir, fileIn, fileOut, 0, 9000, 0, 9000, id, skip, verbose); err != nil {
+	if err := classification.Predict(modelDir, fileIn, fileOut, 0, 9000, 0, 9000, id, skip, verbose); err != nil {
 		log.Fatal(err)
 	}
 	return 0
@@ -215,22 +206,6 @@ func trimAction(args []string, options map[string]string) int {
 		skip = true
 	}
 	if err := trim.Process(fileIn, fileOut, skip, verbose, trim.TL, trim.TR, trim.BR, trim.BL); err != nil {
-		log.Fatal(err)
-	}
-	return 0
-}
-
-func statsAction(args []string, options map[string]string) int {
-
-	maxStr, ok := options["max"]
-	if !ok {
-		maxStr = "25000000"
-	}
-	max, err := strconv.Atoi(maxStr)
-	if err != nil {
-		log.Fatal(err)
-	}
-	if err = stats.Collect(args[0], max); err != nil {
 		log.Fatal(err)
 	}
 	return 0

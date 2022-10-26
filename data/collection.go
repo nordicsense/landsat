@@ -1,4 +1,4 @@
-package collector
+package data
 
 import (
 	"bufio"
@@ -12,7 +12,6 @@ import (
 	"strings"
 
 	"github.com/nordicsense/gdal"
-	"github.com/nordicsense/landsat/data"
 	"github.com/nordicsense/landsat/dataset"
 	"github.com/nordicsense/landsat/io"
 )
@@ -216,7 +215,7 @@ func DumpCSV(name string, recs []Record, clazzId map[string]int) error {
 	w := csv.NewWriter(fo)
 	defer w.Flush()
 
-	l := append([]string{"clazz", "clazzid"}, data.Clazzes...)
+	l := append([]string{"clazz", "clazzid"}, Clazzes...)
 	if err = w.Write(l); err != nil {
 		return err
 	}

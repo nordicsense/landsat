@@ -1,28 +1,28 @@
-package tensorflow_test
+package classification_test
 
 import (
 	"encoding/csv"
-	"github.com/nordicsense/landsat/data"
-	"github.com/nordicsense/landsat/tensorflow"
-	"github.com/nordicsense/landsat/training"
 	"io"
 	"log"
 	"os"
 	"path"
 	"strconv"
 	"testing"
+
+	"github.com/nordicsense/landsat/classification"
+	"github.com/nordicsense/landsat/data"
 )
 
 func TestModelPredict(t *testing.T) {
 
-	root := "/Volumes/Caffeine/Data/Landsat/results/v6-11c-7v"
+	root := "/Volumes/Caffeine/Data/Landsat/results/v11"
 
 	data, expected, err := readTestingSet(path.Join(root, "trainingdata", "trainingdata-test.csv"))
 	if err != nil {
 		t.Error(err)
 	}
 
-	model, err := tensorflow.LoadModel(path.Join(root, "tf.model"))
+	model, err := classification.LoadModel(path.Join(root, "tf.model"))
 	if err != nil {
 		t.Error(err)
 	}
@@ -30,27 +30,24 @@ func TestModelPredict(t *testing.T) {
 
 	outcomes, err := model.Predict(data)
 
-	var contmatrix [training.NClasses][training.NClasses]int
+	var confusionMatrix [classification.NClasses][classification.NClasses]int
 	matches := 0
 	for i, e := range expected {
 		o := outcomes[i]
-		contmatrix[e][o]++
+		confusionMatrix[e][o]++
 		if e == o {
 			matches++
 		}
 	}
 	accuracy := float64(matches) / float64(len(expected))
-	if accuracy < 0.7 {
-		t.Fatal("model quality fallen under 70%", accuracy)
-	}
-	log.Println(contmatrix)
+	log.Println(confusionMatrix)
 	log.Println(accuracy)
 
 }
 
-func readTestingSet(dataFile string) ([]tensorflow.Observation, []int, error) {
+func readTestingSet(dataFile string) ([]classification.Observation, []int, error) {
 	var expected []int
-	var xx []tensorflow.Observation
+	var xx []classification.Observation
 
 	tfile, err := os.Open(dataFile)
 	if err != nil {

@@ -1,7 +1,8 @@
-package tensorflow
+package classification
 
 import (
 	"fmt"
+	
 	"github.com/nordicsense/landsat/data"
 	tf "github.com/tensorflow/tensorflow/tensorflow/go"
 )

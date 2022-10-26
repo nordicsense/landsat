@@ -1,4 +1,4 @@
-package tensorflow
+package classification
 
 import (
 	"fmt"

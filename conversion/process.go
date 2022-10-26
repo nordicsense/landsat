@@ -1,9 +1,8 @@
-package correction
+package conversion
 
 import (
 	"errors"
 	"fmt"
-	"github.com/vardius/progress-go"
 	"math"
 	"os"
 	"path"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/nordicsense/gdal"
 	"github.com/nordicsense/landsat/dataset"
+	"github.com/vardius/progress-go"
 )
 
 func MergeAndApply(pathIn, prefix string, pathOut string, l1, skip, verbose bool, options ...string) error {
@@ -78,11 +78,12 @@ func MergeAndApply(pathIn, prefix string, pathOut string, l1, skip, verbose bool
 		box := dataset.Box{0, 0, ip.XSize(), ip.YSize()}
 		if buf, err = r.ReadBlock(0, 0, box); err == nil {
 			var dist [10]float64
-			// apply correction
+			// apply scaling
 			scale := 2.75e-05
 			offset := -0.2
 			div := 1.0
 			if l1 {
+				// Perform ToA radiance conversion
 				scale = im.Bands[band].RefScale
 				offset = im.Bands[band].RefOffset
 				// generally useless as all the data seems to be missing at the same time

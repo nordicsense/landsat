@@ -2,36 +2,35 @@
 
 export LIBRARY_PATH=/opt/homebrew/lib
 
-
-export VERSION=v11-11c-10v
+export VERSION=v11
 export RESULTS_DIR=/Volumes/Caffeine/Data/Landsat/results/${VERSION}
 export ROOT_DIR=/Volumes/Caffeine/Data/Landsat
 
+ # Covert HDF5 images into multilayer GeoTIFF
+ # compress=deflate zlevel=6 predictor=3
+mkdir -p ${ROOT_DIR}/converted/prod ${ROOT_DIR}/converted/training
 
-mkdir -p ${ROOT_DIR}/corrected/prod
-landsat correct -v -s -d ${ROOT_DIR}/sources/prod -o ${ROOT_DIR}/corrected/prod # compress=deflate zlevel=6 predictor=3
-
-mkdir -p ${ROOT_DIR}/corrected/training
-landsat correct -v -s -d ${ROOT_DIR}/sources/training -o ${ROOT_DIR}/corrected/training # compress=deflate zlevel=6 predictor=3
-
-mkdir -p ${RESULTS_DIR}/trainingdata
-landsat training ${ROOT_DIR}/sources/training-coordinates -d ${ROOT_DIR}/corrected/training -o ${RESULTS_DIR}/trainingdata/trainingdata
+landsat convert -v -s -d ${ROOT_DIR}/sources/prod -o ${ROOT_DIR}/converted/prod
+landsat convert -v -s -d ${ROOT_DIR}/sources/training -o ${ROOT_DIR}/converted/training # compress=deflate zlevel=6 predictor=3
 
 # Train the model here
-conda activate landsat
-python tensorflow/train_save_model.py
+mkdir -p ${RESULTS_DIR}/trainingdata
 
-for TIFFNAME in ${ROOT_DIR}/corrected/prod/LC08*.tiff; do
+landsat training ${ROOT_DIR}/sources/training-coordinates -d ${ROOT_DIR}/converted/training -o ${RESULTS_DIR}/trainingdata/trainingdata
+conda activate landsat
+python classification/train_save_model.py
+
+for TIFFNAME in ${ROOT_DIR}/converted/prod/LC08*.tiff; do
   echo $TIFFNAME
   landsat predict -v -s --id=8 "$TIFFNAME" -m ${RESULTS_DIR}/tf.model -o ${RESULTS_DIR}/classification
 done
 
-for TIFFNAME in ${ROOT_DIR}/corrected/prod/LE07*.tiff; do
+for TIFFNAME in ${ROOT_DIR}/converted/prod/LE07*.tiff; do
   echo $TIFFNAME
   landsat predict -v -s --id=7 "$TIFFNAME" -m ${RESULTS_DIR}/tf.model -o ${RESULTS_DIR}/classification
 done
 
-for TIFFNAME in ${ROOT_DIR}/corrected/prod/LT05*.tiff; do
+for TIFFNAME in ${ROOT_DIR}/converted/prod/LT05*.tiff; do
   echo $TIFFNAME
   landsat predict -v -s --id=5 "$TIFFNAME" -m ${RESULTS_DIR}/tf.model -o ${RESULTS_DIR}/classification
 done
@@ -50,13 +49,6 @@ for TIFFNAME in ${RESULTS_DIR}/trimmed/*.tiff; do
   echo $TIFFNAME
   landsat filter -v -s 5x5 "$TIFFNAME" -o ${RESULTS_DIR}
 done
-
-# Stats
-
-for TIFFNAME in ${RESULTS_DIR}/5x5/*.tiff; do
-  landsat stats "$TIFFNAME"
-done
-
 
 # Diff
 
